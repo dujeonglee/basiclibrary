@@ -1,14 +1,14 @@
 #ifndef _THREAD_POOL_H_
 #define _THREAD_POOL_H_
 
-#include <atomic>		// std::atomic
-#include <condition_variable>	// std::condition_variable
-#include <functional>		// std::function
-#include <iostream>		// std::cout
-#include <mutex>		// std::mutex, std::unique_lock
-#include <thread>		// std::thread
+#include <atomic>               // std::atomic
+#include <condition_variable>   // std::condition_variable
+#include <functional>           // std::function
+#include <iostream>             // std::cout
+#include <mutex>                // std::mutex, std::unique_lock
+#include <thread>               // std::thread
 #include <queue>                // std::queue
-#include <vector>                // std::vector
+#include <vector>               // std::vector
 
 template <unsigned long PRIORITY_LEVEL, unsigned long INITIAL_THREADS>
 class ThreadPool
@@ -23,7 +23,7 @@ class ThreadPool
     private:
         ThreadPool* m_Pool;
         std::thread* m_Thread;
-        std::atomic<STATE> m_State;
+        std::atomic<unsigned char/*STATE*/> m_State;
         bool ShouldWakeup()
         {
             for(unsigned long i = 0 ; i < PRIORITY_LEVEL ; i++)
@@ -40,44 +40,49 @@ class ThreadPool
             return false;
         }
 
+		void Run()
+		{
+			for(;;)
+			{
+				std::function<void()> task = nullptr;
+				{
+					std::unique_lock<std::mutex> TaskQueueLock(m_Pool->m_TaskQueueLock);
+					while(!ShouldWakeup())
+					{
+						m_Pool->m_Condition.wait(TaskQueueLock);
+					}
+					if(this->m_State == STATE::DESTROY)
+					{
+						return;
+					}
+					for(unsigned long priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
+					{
+						if(!m_Pool->m_TaskQueue[priority].empty())
+						{
+							task = std::move(m_Pool->m_TaskQueue[priority].front());
+							m_Pool->m_TaskQueue[priority].pop();
+							break;
+						}
+					}
+				}
+				if(task != nullptr)
+				{
+					m_Pool->m_ActiveWorkers++;
+					task();
+					m_Pool->m_ActiveWorkers--;
+					std::this_thread::sleep_for(std::chrono::milliseconds(0));
+				}
+			}
+
+		}
+
     public:
         WorkerThread(ThreadPool* pool) : m_Pool(pool), m_State(STATE::RUNNING)
         {
             try
             {
-                m_Thread = new std::thread([this](){
-                    for(;;)
-                    {
-                        std::function<void()> task = nullptr;
-                        {
-                            std::unique_lock<std::mutex> TaskQueueLock(m_Pool->m_TaskQueueLock);
-                            while(!ShouldWakeup())
-                            {
-                                m_Pool->m_Condition.wait(TaskQueueLock);
-                            }
-                            if(this->m_State == STATE::DESTROY)
-                            {
-                                return;
-                            }
-                            for(unsigned long priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
-                            {
-                                if(!m_Pool->m_TaskQueue[priority].empty())
-                                {
-                                    task = std::move(m_Pool->m_TaskQueue[priority].front());
-                                    m_Pool->m_TaskQueue[priority].pop();
-                                    break;
-                                }
-                            }
-                        }
-                        if(task != nullptr)
-                        {
-                            m_Pool->m_ActiveWorkers++;
-                            task();
-                            m_Pool->m_ActiveWorkers--;
-                            std::this_thread::sleep_for(std::chrono::milliseconds(0));
-                        }
-                    }
-                });
+                WorkerThread * const self = this;
+                m_Thread = new std::thread([self]{self->Run();});
             }
             catch(const std::bad_alloc& ex)
             {

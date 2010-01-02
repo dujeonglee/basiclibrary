@@ -60,6 +60,28 @@ public:
     {
         Stop();
     }
+
+    uint32_t ImmediateTaskNoExcept(std::function <void()> to, uint32_t priority = 0)
+    {
+        uint32_t ret = INVALID_TIMER_ID;
+        do
+        {
+            ret = ImmediateTask(to, priority);
+        }
+        while (ret == INVALID_TIMER_ID && m_Running);
+        return ret;
+    }
+
+    uint32_t ScheduleTaskNoExcept(uint32_t milli, std::function <void()> to, uint32_t priority = 0)
+    {
+        uint32_t ret = INVALID_TIMER_ID;
+        do
+        {
+            ret = ScheduleTask(milli, to, priority);
+        }
+        while (ret == INVALID_TIMER_ID && m_Running);
+        return ret;
+    }
     
     uint32_t ImmediateTask(std::function <void()> to, uint32_t priority = 0)
     {

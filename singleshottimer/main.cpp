@@ -7,7 +7,7 @@ class Interval
 private:
     SingleShotTimer<2, 1> m_Timer;
     std::atomic<bool> m_Running;
-    unsigned char i;
+    unsigned short i;
 public:
     void PeriodicTask()
     {
@@ -15,7 +15,7 @@ public:
         {
             std::cout<<"Tick: "<<+i++<<std::endl;
             Interval* const self = this;
-            m_Timer.ScheduleTask(1000, [self](){
+            m_Timer.ScheduleTaskNoExcept(100, [self](){
                 self->PeriodicTask();
             });
         }

@@ -68,6 +68,8 @@ private:
         }else{
             if(_parent){
                 (_parent->_left == this?_parent->_left = NULL:_parent->_right = NULL);
+            }else{
+                _tree->_root = NULL;
             }
         }
         _tree->_size--;
@@ -87,16 +89,6 @@ template <class KEY, class DATA> class bstree {
 private:
     bstreeelement<KEY, DATA>* _root;
     unsigned int _size;
-    void _inorder(bstreeelement<KEY, DATA>* node){
-        if(node->_left){
-            _inorder(node->_left);
-        }
-        printf("%d\n", node->_key);
-        if(node->_right){
-            _inorder(node->_right);
-        }
-    }
-
 
 public:
     bstree<KEY, DATA>(){
@@ -108,12 +100,6 @@ public:
             clear();
         }
     };
-
-    void print(){
-        if(_root){
-            _inorder(_root);
-        }
-    }
 
     bool insert(const KEY key, const DATA data){
         if(_root == NULL){
@@ -199,7 +185,9 @@ public:
     };
 
     void clear(){
-
+        while(_size){
+            delete _root;
+        }
     };
 
     friend class bstreeelement<KEY, DATA>;

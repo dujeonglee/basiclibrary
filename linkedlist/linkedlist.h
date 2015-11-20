@@ -177,14 +177,6 @@ public:
         return false;
     };
 
-    void print(){
-        linkedlistelement<T>* pos = _head;
-        while(pos){
-            printf("%d\n", pos->_data);
-            pos = pos->_next;
-        }
-    };
-
     unsigned int size(){
         return _size;
     };

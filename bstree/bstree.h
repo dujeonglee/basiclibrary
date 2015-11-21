@@ -1,6 +1,5 @@
 #ifndef _BSTREE_H_
 #define _BSTREE_H_
-#include <vector>
 
 template <class KEY, class DATA> class bstreeelement;
 template <class KEY, class DATA> class bstree;
@@ -123,20 +122,6 @@ template <class KEY, class DATA> class bstree {
 private:
     bstreeelement<KEY, DATA>* _root;
     unsigned int _size;
-    void _inorder(bstreeelement<KEY, DATA>* node){
-        if(node->_left){
-            _inorder(node->_left);
-        }
-        printf("Key %d Data %d Parent %d LeftCh %d RightCh %d\n",
-               node->_key,
-               node->_data,
-               (node->_parent==NULL?-1:node->_parent->_key),
-               (node->_left==NULL?-1:node->_left->_key),
-               (node->_right==NULL?-1:node->_right->_key));
-        if(node->_right){
-            _inorder(node->_right);
-        }
-    }
 
 public:
     bstree<KEY, DATA>(){
@@ -234,12 +219,6 @@ public:
     void clear(){
         while(_size){
             delete _root;
-        }
-    }
-
-    void print(){
-        if(_root){
-            _inorder(_root);
         }
     }
 

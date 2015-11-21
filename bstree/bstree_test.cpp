@@ -6,19 +6,20 @@
 int main(void){
     bstree<int, int> tree;
 
-    for(int i = 0 ; i < 500 ; i++){
-        int data = rand()%500;
-        if(tree.insert(data, data) == true){
-            printf("%d is added\n", data);
-        }
+    for(int i = 0 ; i < 10000000 ; i++){
+        int data = rand()%10000000;
+        tree.insert(data, data);
     }
-    tree.print();
-    for(int i = 0 ; i < 500 ; i++){
-        int data = rand()%500;
-        if(tree.remove(data) == true){
-            printf("%d is removed\n", data);
-        }
+    printf("Clear %d\n", tree.size());
+    tree.clear();
+    printf("Done\n");
+
+    for(int i = 0 ; i < 10000000 ; i++){
+        int data = rand()%10000000;
+        tree.insert(data, data);
     }
-    tree.print();
+    printf("Clear %d\n", tree.size());
+    tree.clear2();
+    printf("Done\n");
     return 0;
 }

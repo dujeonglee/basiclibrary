@@ -60,12 +60,12 @@ public:
         _head = NULL;
         _tail = NULL;
         _size = 0;
-    };
+    }
     ~linkedlist<T>(){
         if(_size > 0){
             clear();
         }
-    };
+    }
 
     bool push_front(const T data){
         linkedlistelement<T>* new_element = new linkedlistelement<T>(this);
@@ -82,7 +82,7 @@ public:
             _head = new_element;
         }
         return true;
-    };
+    }
 
     bool push_back(const T data){
         linkedlistelement<T>* new_element = new linkedlistelement<T>(this);
@@ -99,7 +99,7 @@ public:
             _tail = new_element;
         }
         return true;
-    };
+    }
 
     bool push_at(const int pos, const T data){
         if(pos == 0){
@@ -132,7 +132,7 @@ public:
             return true;
         }
         return false;
-    };
+    }
 
     bool pop_front(T* ret){
         if(_head){
@@ -141,7 +141,7 @@ public:
             return true;
         }
         return false;
-    };
+    }
 
     bool pop_back(T* ret){
         if(_tail){
@@ -150,7 +150,7 @@ public:
             return true;
         }
         return false;
-    };
+    }
 
     bool pop_at(int pos, T* ret){
         if(pos == 0){
@@ -175,16 +175,16 @@ public:
             return true;
         }
         return false;
-    };
+    }
 
     unsigned int size(){
         return _size;
-    };
+    }
 
     void clear(){
         T tmp;
         while(pop_back(&tmp));
-    };
+    }
 
     friend class linkedlistelement<T>;
 };

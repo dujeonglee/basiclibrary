@@ -1,18 +1,24 @@
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "bstree.h"
 
 int main(void){
     bstree<int, int> tree;
 
-    tree.insert(5, 3);
-    tree.insert(2, 4);
-    tree.insert(8, 8);
+    for(int i = 0 ; i < 500 ; i++){
+        int data = rand()%500;
+        if(tree.insert(data, data) == true){
+            printf("%d is added\n", data);
+        }
+    }
     tree.print();
-
-    tree.remove(5);
+    for(int i = 0 ; i < 500 ; i++){
+        int data = rand()%500;
+        if(tree.remove(data) == true){
+            printf("%d is removed\n", data);
+        }
+    }
     tree.print();
-    printf("F %d\n", *tree.find(8));
-    printf("F %d\n", *tree.find(2));
-    printf("F %d\n", (tree.find(5)==NULL?-1:*tree.find(5)));
     return 0;
 }

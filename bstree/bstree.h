@@ -1,11 +1,11 @@
 #ifndef _BSTREE_H_
 #define _BSTREE_H_
+#include <vector>
 
 template <class KEY, class DATA> class bstreeelement;
 template <class KEY, class DATA> class bstree;
 
 template <class KEY, class DATA> class bstreeelement{
-public:
 private:
     DATA _data;
     KEY _key;
@@ -29,19 +29,36 @@ private:
             while(largest_in_left->_right != NULL){
                 largest_in_left = largest_in_left->_right;
             }
-            if(largest_in_left != _left){
-                largest_in_left->_parent->_right = largest_in_left->_left;
-                largest_in_left->_parent = _parent;
-                largest_in_left->_left = _left;
-                largest_in_left->_right = _right;
-            }else{
+            if(largest_in_left == _left){
                 if(_parent){
-                    _parent->_left = largest_in_left;
+                    (_parent->_left==this?_parent->_left:_parent->_right) = largest_in_left;
                 }
                 largest_in_left->_parent = _parent;
+
+                if(_right){
+                    _right->_parent = largest_in_left;
+                }
                 largest_in_left->_right = _right;
+            }else{
+                largest_in_left->_parent->_right = largest_in_left->_left;
+                if(largest_in_left->_parent->_right){
+                    largest_in_left->_parent->_right->_parent = largest_in_left->_parent;
+                }
+
+                largest_in_left->_parent = _parent;
+                if(largest_in_left->_parent){
+                    (largest_in_left->_parent->_left == this?largest_in_left->_parent->_left:largest_in_left->_parent->_right) = largest_in_left;
+                }
+                largest_in_left->_left = _left;
+                if(largest_in_left->_left){
+                    largest_in_left->_left->_parent = largest_in_left;
+                }
+                largest_in_left->_right = _right;
+                if(largest_in_left->_right){
+                    largest_in_left->_right->_parent = largest_in_left;
+                }
             }
-            if(_tree->_root == this){
+            if(this == _tree->_root){
                 _tree->_root = largest_in_left;
             }
         }else if(_right){
@@ -50,24 +67,41 @@ private:
             while(smallest_in_right->_left != NULL){
                 smallest_in_right = smallest_in_right->_left;
             }
-            if(smallest_in_right != _right){
-                smallest_in_right->_parent->_left = smallest_in_right->_right;
-                smallest_in_right->_parent = _parent;
-                smallest_in_right->_right = _right;
-                smallest_in_right->_left = _left;
-            }else{
+            if(smallest_in_right == _right){
                 if(_parent){
-                    _parent->_right = smallest_in_right;
+                    (_parent->_left==this?_parent->_left:_parent->_right) = smallest_in_right;
                 }
                 smallest_in_right->_parent = _parent;
+
+                if(_left){
+                    _left->_parent = smallest_in_right;
+                }
                 smallest_in_right->_left = _left;
+            }else{
+                smallest_in_right->_parent->_left = smallest_in_right->_right;
+                if(smallest_in_right->_parent->_left){
+                    smallest_in_right->_parent->_left->_parent = smallest_in_right->_parent;
+                }
+
+                smallest_in_right->_parent = _parent;
+                if(smallest_in_right->_parent){
+                    (smallest_in_right->_parent->_left == this?smallest_in_right->_parent->_left:smallest_in_right->_parent->_right) = smallest_in_right;
+                }
+                smallest_in_right->_left = _left;
+                if(smallest_in_right->_left){
+                    smallest_in_right->_left->_parent = smallest_in_right;
+                }
+                smallest_in_right->_right = _right;
+                if(smallest_in_right->_right){
+                    smallest_in_right->_right->_parent = smallest_in_right;
+                }
             }
-            if(_tree->_root == this){
+            if(this == _tree->_root){
                 _tree->_root = smallest_in_right;
             }
         }else{
             if(_parent){
-                (_parent->_left == this?_parent->_left = NULL:_parent->_right = NULL);
+                (_parent->_left == this?_parent->_left:_parent->_right) = NULL;
             }else{
                 _tree->_root = NULL;
             }
@@ -89,17 +123,31 @@ template <class KEY, class DATA> class bstree {
 private:
     bstreeelement<KEY, DATA>* _root;
     unsigned int _size;
+    void _inorder(bstreeelement<KEY, DATA>* node){
+        if(node->_left){
+            _inorder(node->_left);
+        }
+        printf("Key %d Data %d Parent %d LeftCh %d RightCh %d\n",
+               node->_key,
+               node->_data,
+               (node->_parent==NULL?-1:node->_parent->_key),
+               (node->_left==NULL?-1:node->_left->_key),
+               (node->_right==NULL?-1:node->_right->_key));
+        if(node->_right){
+            _inorder(node->_right);
+        }
+    }
 
 public:
     bstree<KEY, DATA>(){
         _root = NULL;
         _size = 0;
-    };
+    }
     ~bstree<KEY, DATA>(){
         if(_size > 0){
             clear();
         }
-    };
+    }
 
     bool insert(const KEY key, const DATA data){
         if(_root == NULL){
@@ -109,9 +157,6 @@ public:
             }
             _root->_key = key;
             _root->_data = data;
-            _root->_parent = NULL;
-            _root->_left = NULL;
-            _root->_right = NULL;
         }else{
             bstreeelement<KEY, DATA>* parent;
             parent = _root;
@@ -122,7 +167,9 @@ public:
                       (key > parent->_key && parent->_right == NULL)
                       ||
                       key == parent->_key
-                    ) == false
+                    )
+                    ==
+                    false
                  ){
                 parent = (key < parent->_key?parent->_left:parent->_right);
             }
@@ -147,7 +194,7 @@ public:
             }
         }
         return true;
-    };
+    }
 
     bool remove(const KEY key){
         if(_root == NULL){
@@ -163,7 +210,7 @@ public:
         }
         delete target;
         return true;
-    };
+    }
 
     DATA* find(const KEY key){
         if(_root == NULL){
@@ -178,17 +225,23 @@ public:
             }
         }
         return (&target->_data);
-    };
+    }
 
     unsigned int size(){
         return _size;
-    };
+    }
 
     void clear(){
         while(_size){
             delete _root;
         }
-    };
+    }
+
+    void print(){
+        if(_root){
+            _inorder(_root);
+        }
+    }
 
     friend class bstreeelement<KEY, DATA>;
 };

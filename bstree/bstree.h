@@ -22,87 +22,50 @@ private:
     }
 
     ~bstreeelement<KEY, DATA>(){
-        if(_left){
-            bstreeelement<KEY, DATA>* largest_in_left;
-            largest_in_left = _left;
-            while(largest_in_left->_right != NULL){
-                largest_in_left = largest_in_left->_right;
-            }
-            if(largest_in_left == _left){
-                if(_parent){
-                    (_parent->_left==this?_parent->_left:_parent->_right) = largest_in_left;
-                }
-                largest_in_left->_parent = _parent;
-
-                if(_right){
-                    _right->_parent = largest_in_left;
-                }
-                largest_in_left->_right = _right;
-            }else{
-                largest_in_left->_parent->_right = largest_in_left->_left;
-                if(largest_in_left->_parent->_right){
-                    largest_in_left->_parent->_right->_parent = largest_in_left->_parent;
-                }
-
-                largest_in_left->_parent = _parent;
-                if(largest_in_left->_parent){
-                    (largest_in_left->_parent->_left == this?largest_in_left->_parent->_left:largest_in_left->_parent->_right) = largest_in_left;
-                }
-                largest_in_left->_left = _left;
-                if(largest_in_left->_left){
-                    largest_in_left->_left->_parent = largest_in_left;
-                }
-                largest_in_left->_right = _right;
-                if(largest_in_left->_right){
-                    largest_in_left->_right->_parent = largest_in_left;
-                }
-            }
-            if(this == _tree->_root){
-                _tree->_root = largest_in_left;
-            }
-        }else if(_right){
-            bstreeelement<KEY, DATA>* smallest_in_right;
-            smallest_in_right = _right;
-            while(smallest_in_right->_left != NULL){
-                smallest_in_right = smallest_in_right->_left;
-            }
-            if(smallest_in_right == _right){
-                if(_parent){
-                    (_parent->_left==this?_parent->_left:_parent->_right) = smallest_in_right;
-                }
-                smallest_in_right->_parent = _parent;
-
-                if(_left){
-                    _left->_parent = smallest_in_right;
-                }
-                smallest_in_right->_left = _left;
-            }else{
-                smallest_in_right->_parent->_left = smallest_in_right->_right;
-                if(smallest_in_right->_parent->_left){
-                    smallest_in_right->_parent->_left->_parent = smallest_in_right->_parent;
-                }
-
-                smallest_in_right->_parent = _parent;
-                if(smallest_in_right->_parent){
-                    (smallest_in_right->_parent->_left == this?smallest_in_right->_parent->_left:smallest_in_right->_parent->_right) = smallest_in_right;
-                }
-                smallest_in_right->_left = _left;
-                if(smallest_in_right->_left){
-                    smallest_in_right->_left->_parent = smallest_in_right;
-                }
-                smallest_in_right->_right = _right;
-                if(smallest_in_right->_right){
-                    smallest_in_right->_right->_parent = smallest_in_right;
-                }
-            }
-            if(this == _tree->_root){
-                _tree->_root = smallest_in_right;
-            }
-        }else{
+        if(_left == NULL && _right == NULL){
             if(_parent){
                 (_parent->_left == this?_parent->_left:_parent->_right) = NULL;
             }else{
                 _tree->_root = NULL;
+            }
+        }else{
+            bstreeelement<KEY, DATA>* target;
+            target = (_left?_left:_right);
+            while((_left?target->_right:target->_left) != NULL){
+                target = (_left?target->_right:target->_left);
+            }
+
+            if(target->_parent == this){
+                if(_parent){
+                    (_parent->_left == this?_parent->_left:_parent->_right) = target;
+                }
+                target->_parent = _parent;
+
+                if((_left?_right:_left)){
+                    (_left?_right:_right)->_parent = target;
+                }
+                (_left?target->_right:target->_left) = (_left?_right:_left);
+            }else{
+                (_left?target->_parent->_right:target->_parent->_left) = (_left?target->_left:target->_right);
+                if((_left?target->_parent->_right:target->_parent->_left)){
+                    (_left?target->_parent->_right:target->_parent->_left)->_parent = target->_parent;
+                }
+
+                target->_parent = _parent;
+                if(target->_parent){
+                    (target->_parent->_left == this?target->_parent->_left:target->_parent->_right) = target;
+                }
+                target->_left = _left;
+                if(target->_left){
+                    target->_left->_parent = target;
+                }
+                target->_right = _right;
+                if(target->_right){
+                    target->_right->_parent = target;
+                }
+            }
+            if(this == _tree->_root){
+                _tree->_root = target;
             }
         }
         _tree->_size--;
@@ -144,38 +107,31 @@ public:
             _root->_data = data;
         }else{
             bstreeelement<KEY, DATA>* parent;
+            bstreeelement<KEY, DATA>* new_child = NULL;
             parent = _root;
             while(
-                    (
+                  (
                       (key < parent->_key && parent->_left == NULL)
                       ||
                       (key > parent->_key && parent->_right == NULL)
                       ||
                       key == parent->_key
-                    )
-                    ==
-                    false
-                 ){
+                      )
+                  ==
+                  false
+                  ){
                 parent = (key < parent->_key?parent->_left:parent->_right);
             }
             if(key == parent->_key){
                 return false;
-            }else if(key < parent->_key){
-                parent->_left = new bstreeelement<KEY, DATA>(this);
-                if(parent->_left == NULL){
-                    return false;
-                }
-                parent->_left->_key = key;
-                parent->_left->_data = data;
-                parent->_left->_parent = parent;
             }else{
-                parent->_right = new bstreeelement<KEY, DATA>(this);
-                if(parent->_right == NULL){
+                new_child = (key < parent->_key?parent->_left:parent->_right) = new bstreeelement<KEY, DATA>(this);
+                if(new_child == NULL){
                     return false;
                 }
-                parent->_right->_key = key;
-                parent->_right->_data = data;
-                parent->_right->_parent = parent;
+                new_child->_key = key;
+                new_child->_data = data;
+                new_child->_parent = parent;
             }
         }
         return true;

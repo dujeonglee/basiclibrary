@@ -6,20 +6,14 @@
 int main(void){
     bstree<int, int> tree;
 
-    for(int i = 0 ; i < 10000000 ; i++){
+    for(int i = 0 ; i < 1000000 ; i++){
         int data = rand()%10000000;
+    //for(int i = 0 ; i < 3 ; i++){
+        //int data = i;
         tree.insert(data, data);
     }
     printf("Clear %d\n", tree.size());
     tree.clear();
-    printf("Done\n");
-
-    for(int i = 0 ; i < 10000000 ; i++){
-        int data = rand()%10000000;
-        tree.insert(data, data);
-    }
-    printf("Clear %d\n", tree.size());
-    tree.clear2();
     printf("Done\n");
     return 0;
 }

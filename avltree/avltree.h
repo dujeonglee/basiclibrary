@@ -66,6 +66,9 @@ private:
                     target->_right->_parent = target;
                 }
             }
+            /* TODO
+            Rearrange hieght balance
+            */
             if(this == _tree->_root){
                 _tree->_root = target;
             }

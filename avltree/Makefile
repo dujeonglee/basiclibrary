@@ -1,0 +1,28 @@
+.PHONY : all debug release backup
+.SUFFIXES : .cpp .o
+
+SOURCES  := $(wildcard *.cpp)
+INCLUDES := 
+OBJECTS  := $(SOURCES:.cpp=.o)
+LIBRARY :=
+CPP := g++
+TARGET = test
+
+all : DEBUG
+
+$(TARGET) : $(OBJECTS)
+	$(CPP) -o $@  $^
+
+.cc.o : $(SOURCES)
+	$(CPP) $(CPPFLAGS) $(INCLUDES) $(SOURCES) $(LIBRARY)
+
+clean :
+	rm -rf $(OBJECTS) $(TARGET) *~
+
+DEBUG : CPPFLAGS := -g -c -Wall -Werror
+DEBUG : $(TARGET)
+	./test
+
+RELEASE : CPPFLAGS := -O0 -c -Wall -Werror
+RELEASE : $(TARGET)
+	./test

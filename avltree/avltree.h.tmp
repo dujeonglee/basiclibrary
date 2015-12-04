@@ -38,14 +38,28 @@ private:
             }
         }else{
             avltreeelement<KEY, DATA>* target;
+#if 0
             target = (_left?_left:_right);
             while((_left?target->_right:target->_left) != NULL){
                 target = (_left?target->_right:target->_left);
             }
-            adjustment_child = target;
-            adjustment_parent = target->_parent;
+#else
+            target = (_right?_right:_left);
+            while((_right?target->_left:target->_right) != NULL){
+                target = (_right?target->_left:target->_right);
+            }
+#endif
+            target->_balance_factor = _balance_factor;
 
             if(target->_parent == this){
+                /* This case is always root*/
+                adjustment_parent = target;
+                if(adjustment_parent->_left || adjustment_parent->_right){
+                    adjustment_child = (adjustment_parent->_left?adjustment_parent->_left:adjustment_parent->_right);
+                }else{
+                    adjustment_child = NULL;
+                    adjustment_parent->_balance_factor = _balance_factor + (adjustment_parent==_left?-1:1);
+                }
                 if(_parent){
                     (_parent->_left == this?_parent->_left:_parent->_right) = target;
                 }
@@ -56,6 +70,9 @@ private:
                 }
                 (_left?target->_right:target->_left) = (_left?_right:_left);
             }else{
+                adjustment_child = target;
+                adjustment_parent = target->_parent;
+
                 (_left?target->_parent->_right:target->_parent->_left) = (_left?target->_left:target->_right);
                 if((_left?target->_parent->_right:target->_parent->_left)){
                     (_left?target->_parent->_right:target->_parent->_left)->_parent = target->_parent;
@@ -79,8 +96,10 @@ private:
             }
         }
         while(adjustment_parent != NULL){
-            adjustment_parent->_balance_factor += (adjustment_child->_key < adjustment_parent->_key?-1:1);
-            printf("Update BF at %d to %hhd\n", adjustment_parent->_key, adjustment_parent->_balance_factor);
+            if(adjustment_child){
+                adjustment_parent->_balance_factor += (adjustment_child->_key < adjustment_parent->_key?-1:1);
+                printf("Update BF at %d to %hhd\n", adjustment_parent->_key, adjustment_parent->_balance_factor);
+            }
             if( adjustment_parent->_balance_factor == 1 || adjustment_parent->_balance_factor == -1 ){
                 break;
             }
@@ -397,13 +416,11 @@ public:
 
     void delete_root(){
         delete _root;
-        print();
     }
 
     void clear(){
         while(_size){
             delete _root;
-            print();
         }
     }
 

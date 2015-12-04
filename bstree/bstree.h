@@ -42,7 +42,7 @@ private:
                 target->_parent = _parent;
 
                 if((_left?_right:_left)){
-                    (_left?_right:_right)->_parent = target;
+                    (_left?_right:_left)->_parent = target;
                 }
                 (_left?target->_right:target->_left) = (_left?_right:_left);
             }else{

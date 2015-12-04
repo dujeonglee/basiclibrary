@@ -1,6 +1,8 @@
 #ifndef _AVLTREE_H_
 #define _AVLTREE_H_
 
+#define BALANCED_DELETION
+
 template <class KEY, class DATA> class avltreeelement;
 template <class KEY, class DATA> class avltree;
 
@@ -37,17 +39,21 @@ private:
             }
         }else{
             avltreeelement<KEY, DATA>* target;
-#if 0
-            target = (_left?_left:_right);
-            while((_left?target->_right:target->_left) != NULL){
-                target = (_left?target->_right:target->_left);
-            }
+#ifdef BALANCED_DELETION
+            if(_balance_factor > 0){
 #else
-            target = (_right?_right:_left);
-            while((_right?target->_left:target->_right) != NULL){
-                target = (_right?target->_left:target->_right);
-            }
+            if(1){
 #endif
+                target = (_left?_left:_right);
+                while((_left?target->_right:target->_left) != NULL){
+                    target = (_left?target->_right:target->_left);
+                }
+            }else{
+                target = (_right?_right:_left);
+                while((_right?target->_left:target->_right) != NULL){
+                    target = (_right?target->_left:target->_right);
+                }
+            }
             target->_balance_factor = _balance_factor;
 
             if(target->_parent == this){
@@ -64,31 +70,39 @@ private:
                 }
                 target->_parent = _parent;
 
-#if 0
-                if((_left?_right:_left)){
-                    (_left?_right:_left)->_parent = target;
-                }
-                (_left?target->_right:target->_left) = (_left?_right:_left);
+#ifdef BALANCED_DELETION
+                if(_balance_factor > 0){
 #else
-                if((_right?_left:_right)){
-                    (_right?_left:_right)->_parent = target;
-                }
-                (_right?target->_left:target->_right) = (_right?_left:_right);
+                if(1){
 #endif
+                    if((_left?_right:_left)){
+                        (_left?_right:_left)->_parent = target;
+                    }
+                    (_left?target->_right:target->_left) = (_left?_right:_left);
+                }else{
+                    if((_right?_left:_right)){
+                        (_right?_left:_right)->_parent = target;
+                    }
+                    (_right?target->_left:target->_right) = (_right?_left:_right);
+                }
             }else{
                 adjustment_child = target;
                 adjustment_parent = target->_parent;
-#if 0
-                (_left?target->_parent->_right:target->_parent->_left) = (_left?target->_left:target->_right);
-                if((_left?target->_parent->_right:target->_parent->_left)){
-                    (_left?target->_parent->_right:target->_parent->_left)->_parent = target->_parent;
-                }
+#ifdef BALANCED_DELETION
+                if(_balance_factor > 0){
 #else
-                (_right?target->_parent->_left:target->_parent->_right) = (_right?target->_right:target->_left);
-                if((_right?target->_parent->_left:target->_parent->_right)){
-                    (_right?target->_parent->_left:target->_parent->_right)->_parent = target->_parent;
-                }
+                if(1){
 #endif
+                    (_left?target->_parent->_right:target->_parent->_left) = (_left?target->_left:target->_right);
+                    if((_left?target->_parent->_right:target->_parent->_left)){
+                        (_left?target->_parent->_right:target->_parent->_left)->_parent = target->_parent;
+                    }
+                }else{
+                    (_right?target->_parent->_left:target->_parent->_right) = (_right?target->_right:target->_left);
+                    if((_right?target->_parent->_left:target->_parent->_right)){
+                        (_right?target->_parent->_left:target->_parent->_right)->_parent = target->_parent;
+                    }
+                }
                 target->_parent = _parent;
                 if(target->_parent){
                     (target->_parent->_left == this?target->_parent->_left:target->_parent->_right) = target;
@@ -102,9 +116,6 @@ private:
                     target->_right->_parent = target;
                 }
             }
-            /* TODO
-            Rearrange hieght balance
-            */
             if(this == _tree->_root){
                 _tree->_root = target;
             }
@@ -217,18 +228,20 @@ template <class KEY, class DATA> class avltree {
 private:
     avltreeelement<KEY, DATA>* _root;
     unsigned int _size;
+    unsigned int _rotation_cnt;
 
     void _inorder(avltreeelement<KEY, DATA>* node){
         if(node->_left){
             _inorder(node->_left);
         }
-        printf("[%d] parent %d left %d right %d bf %hhd\n", node->_key, (node->_parent?node->_parent->_key:-1), (node->_left?node->_left->_key:-1), (node->_right?node->_right->_key:-1), node->_balance_factor);
+        //printf("[%d] parent %d left %d right %d bf %hhd\n", node->_key, (node->_parent?node->_parent->_key:-1), (node->_left?node->_left->_key:-1), (node->_right?node->_right->_key:-1), node->_balance_factor);
         if(node->_right){
             _inorder(node->_right);
         }
     }
 
     void _left_rotation(avltreeelement<KEY, DATA>* const parent, avltreeelement<KEY, DATA>* const child){
+        _rotation_cnt++;
         if(parent->_right != child){
             return;
         }
@@ -251,6 +264,7 @@ private:
     }
 
     void _right_rotation(avltreeelement<KEY, DATA>* parent, avltreeelement<KEY, DATA>* child){
+        _rotation_cnt++;
         if(parent->_left != child){
             return;
         }
@@ -276,6 +290,7 @@ public:
     avltree<KEY, DATA>(){
         _root = NULL;
         _size = 0;
+        _rotation_cnt = 0;
     }
     ~avltree<KEY, DATA>(){
         if(_size > 0){
@@ -430,6 +445,7 @@ public:
     void print(){
         if(_root)
             _inorder(_root);
+        printf("rotations : %u\n", _rotation_cnt);
     }
 
     friend class avltreeelement<KEY, DATA>;

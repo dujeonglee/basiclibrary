@@ -57,7 +57,6 @@ private:
             target->_balance_factor = _balance_factor;
 
             if(target->_parent == this){
-                /* This case is always root*/
                 adjustment_parent = target;
                 if(adjustment_parent->_left || adjustment_parent->_right){
                     adjustment_child = (adjustment_parent->_left?adjustment_parent->_left:adjustment_parent->_right);
@@ -228,7 +227,6 @@ template <class KEY, class DATA> class avltree {
 private:
     avltreeelement<KEY, DATA>* _root;
     unsigned int _size;
-    unsigned int _rotation_cnt;
 
     void _inorder(avltreeelement<KEY, DATA>* node){
         if(node->_left){
@@ -241,7 +239,6 @@ private:
     }
 
     void _left_rotation(avltreeelement<KEY, DATA>* const parent, avltreeelement<KEY, DATA>* const child){
-        _rotation_cnt++;
         if(parent->_right != child){
             return;
         }
@@ -260,11 +257,9 @@ private:
 
         child->_left = parent;
         parent->_parent = child;
-
     }
 
     void _right_rotation(avltreeelement<KEY, DATA>* parent, avltreeelement<KEY, DATA>* child){
-        _rotation_cnt++;
         if(parent->_left != child){
             return;
         }
@@ -283,14 +278,12 @@ private:
 
         child->_right = parent;
         parent->_parent = child;
-
     }
 
 public:
     avltree<KEY, DATA>(){
         _root = NULL;
         _size = 0;
-        _rotation_cnt = 0;
     }
     ~avltree<KEY, DATA>(){
         if(_size > 0){
@@ -432,20 +425,10 @@ public:
         return _size;
     }
 
-    void delete_root(){
-        delete _root;
-    }
-
     void clear(){
         while(_size){
             delete _root;
         }
-    }
-
-    void print(){
-        if(_root)
-            _inorder(_root);
-        printf("rotations : %u\n", _rotation_cnt);
     }
 
     friend class avltreeelement<KEY, DATA>;

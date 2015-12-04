@@ -24,7 +24,12 @@ private:
     }
 
     ~avltreeelement<KEY, DATA>(){
+        avltreeelement<KEY, DATA>* adjustment_child;
+        avltreeelement<KEY, DATA>* adjustment_parent;
+
         if(_left == NULL && _right == NULL){
+            adjustment_child = this;
+            adjustment_parent = _parent;
             if(_parent){
                 (_parent->_left == this?_parent->_left:_parent->_right) = NULL;
             }else{
@@ -32,27 +37,58 @@ private:
             }
         }else{
             avltreeelement<KEY, DATA>* target;
+#if 0
             target = (_left?_left:_right);
             while((_left?target->_right:target->_left) != NULL){
                 target = (_left?target->_right:target->_left);
             }
+#else
+            target = (_right?_right:_left);
+            while((_right?target->_left:target->_right) != NULL){
+                target = (_right?target->_left:target->_right);
+            }
+#endif
+            target->_balance_factor = _balance_factor;
 
             if(target->_parent == this){
+                /* This case is always root*/
+                adjustment_parent = target;
+                if(adjustment_parent->_left || adjustment_parent->_right){
+                    adjustment_child = (adjustment_parent->_left?adjustment_parent->_left:adjustment_parent->_right);
+                }else{
+                    adjustment_child = NULL;
+                    adjustment_parent->_balance_factor = _balance_factor + (adjustment_parent==_left?-1:1);
+                }
                 if(_parent){
                     (_parent->_left == this?_parent->_left:_parent->_right) = target;
                 }
                 target->_parent = _parent;
 
+#if 0
                 if((_left?_right:_left)){
-                    (_left?_right:_right)->_parent = target;
+                    (_left?_right:_left)->_parent = target;
                 }
                 (_left?target->_right:target->_left) = (_left?_right:_left);
+#else
+                if((_right?_left:_right)){
+                    (_right?_left:_right)->_parent = target;
+                }
+                (_right?target->_left:target->_right) = (_right?_left:_right);
+#endif
             }else{
+                adjustment_child = target;
+                adjustment_parent = target->_parent;
+#if 0
                 (_left?target->_parent->_right:target->_parent->_left) = (_left?target->_left:target->_right);
                 if((_left?target->_parent->_right:target->_parent->_left)){
                     (_left?target->_parent->_right:target->_parent->_left)->_parent = target->_parent;
                 }
-
+#else
+                (_right?target->_parent->_left:target->_parent->_right) = (_right?target->_right:target->_left);
+                if((_right?target->_parent->_left:target->_parent->_right)){
+                    (_right?target->_parent->_left:target->_parent->_right)->_parent = target->_parent;
+                }
+#endif
                 target->_parent = _parent;
                 if(target->_parent){
                     (target->_parent->_left == this?target->_parent->_left:target->_parent->_right) = target;
@@ -71,6 +107,97 @@ private:
             */
             if(this == _tree->_root){
                 _tree->_root = target;
+            }
+        }
+        while(adjustment_parent != NULL){
+            if(adjustment_child){
+                adjustment_parent->_balance_factor += (adjustment_child->_key < adjustment_parent->_key?-1:1);
+            }
+            if( adjustment_parent->_balance_factor == 1 || adjustment_parent->_balance_factor == -1 ){
+                break;
+            }
+            if(adjustment_parent->_balance_factor == 2 || adjustment_parent->_balance_factor == -2 ){
+                avltreeelement<KEY, DATA>* const grand_parent = adjustment_parent;
+                if(adjustment_parent->_balance_factor == 2){
+                    avltreeelement<KEY, DATA>* const parent = grand_parent->_left;
+                    if(parent->_balance_factor == 1 || parent->_balance_factor == 0){
+                        _tree->_right_rotation(grand_parent, parent);
+                        if(parent->_balance_factor == 1){
+                            grand_parent->_balance_factor = 0;
+                            parent->_balance_factor = 0;
+
+                            adjustment_parent = parent->_parent;
+                            adjustment_child = parent;
+                        }else{ // parent->_balance_factor == 0
+                            grand_parent->_balance_factor = 1;
+                            parent->_balance_factor = -1;
+                            break;
+                        }
+                    }else{ // adjustment_parent->_left && adjustment_parent->_left->_right
+                        avltreeelement<KEY, DATA>* const child = parent->_right;
+
+                        _tree->_left_rotation(parent, child);
+                        _tree->_right_rotation(grand_parent, child);
+                        if(child->_balance_factor == 0){
+                            grand_parent->_balance_factor = 0;
+                            parent->_balance_factor = 0;
+                        }else{
+                            if(child->_balance_factor == 1){
+                                grand_parent->_balance_factor = -1;
+                                parent->_balance_factor = 0;
+                                child->_balance_factor = 0;
+                            }else{ // child->_balance_factor == -1
+                                grand_parent->_balance_factor = 0;
+                                parent->_balance_factor = 1;
+                                child->_balance_factor = 0;
+                            }
+
+                        }
+
+                        adjustment_parent = child->_parent;
+                        adjustment_child = child;
+                    }
+                }else{ // adjustment_parent->_balance_factor == -2
+                    avltreeelement<KEY, DATA>* const parent = grand_parent->_right;
+                    if(parent->_balance_factor == -1|| parent->_balance_factor == 0){
+                        _tree->_left_rotation(grand_parent, parent);
+                        if(parent->_balance_factor == -1){
+                            grand_parent->_balance_factor = 0;
+                            parent->_balance_factor = 0;
+
+                            adjustment_parent = parent->_parent;
+                            adjustment_child = parent;
+                        }else{ // parent->_balance_factor == 0
+                            grand_parent->_balance_factor = -1;
+                            parent->_balance_factor = 1;
+                            break;
+                        }
+                    }else{ // adjustment_parent->_right && adjustment_parent->_right->_left
+                        avltreeelement<KEY, DATA>* const child = parent->_left;
+
+                        _tree->_right_rotation(parent, child);
+                        _tree->_left_rotation(grand_parent, child);
+                        if(child->_balance_factor == 0){
+                            grand_parent->_balance_factor = 0;
+                            parent->_balance_factor = 0;
+                        }else{
+                            if(child->_balance_factor == 1){
+                                grand_parent->_balance_factor = 0;
+                                parent->_balance_factor = -1;
+                                child->_balance_factor = 0;
+                            }else{ // child->_balance_factor == -1
+                                grand_parent->_balance_factor = 1;
+                                parent->_balance_factor = 0;
+                                child->_balance_factor = 0;
+                            }
+                        }
+                        adjustment_parent = child->_parent;
+                        adjustment_child = child;
+                    }
+                }
+            }else{
+                adjustment_child = adjustment_parent;
+                adjustment_parent = adjustment_parent->_parent;
             }
         }
         _tree->_size--;
@@ -288,6 +415,10 @@ public:
 
     unsigned int size(){
         return _size;
+    }
+
+    void delete_root(){
+        delete _root;
     }
 
     void clear(){

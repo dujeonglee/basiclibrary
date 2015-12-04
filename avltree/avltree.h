@@ -228,16 +228,6 @@ private:
     avltreeelement<KEY, DATA>* _root;
     unsigned int _size;
 
-    void _inorder(avltreeelement<KEY, DATA>* node){
-        if(node->_left){
-            _inorder(node->_left);
-        }
-        //printf("[%d] parent %d left %d right %d bf %hhd\n", node->_key, (node->_parent?node->_parent->_key:-1), (node->_left?node->_left->_key:-1), (node->_right?node->_right->_key:-1), node->_balance_factor);
-        if(node->_right){
-            _inorder(node->_right);
-        }
-    }
-
     void _left_rotation(avltreeelement<KEY, DATA>* const parent, avltreeelement<KEY, DATA>* const child){
         if(parent->_right != child){
             return;

@@ -13,8 +13,6 @@ int main(void){
             //printf("Add %d\n", data);
         }
     }
-    tree.print();
     tree.clear();
-    tree.print();
     return 0;
 }

@@ -26,6 +26,8 @@ private:
     ~avltreeelement<KEY, DATA>(){
         avltreeelement<KEY, DATA>* adjustment_child;
         avltreeelement<KEY, DATA>* adjustment_parent;
+
+        printf("delete %d\n", _key);
         if(_left == NULL && _right == NULL){
             adjustment_child = this;
             adjustment_parent = _parent;
@@ -77,7 +79,8 @@ private:
             }
         }
         while(adjustment_parent != NULL){
-            adjustment_parent->_balance_factor += (adjustment_child->_key < adjustment_parent->_key?1:-1);
+            adjustment_parent->_balance_factor += (adjustment_child->_key < adjustment_parent->_key?-1:1);
+            printf("Update BF at %d to %hhd\n", adjustment_parent->_key, adjustment_parent->_balance_factor);
             if( adjustment_parent->_balance_factor == 1 || adjustment_parent->_balance_factor == -1 ){
                 break;
             }
@@ -128,6 +131,7 @@ private:
                     }
                 }else{ // adjustment_parent->_balance_factor == -2
                     avltreeelement<KEY, DATA>* const parent = grand_parent->_right;
+                    printf("%d %hhd %p\n", grand_parent->_key, grand_parent->_balance_factor, parent);
                     if(parent->_balance_factor == -1|| parent->_balance_factor == 0){
                         //avltreeelement<KEY, DATA>* const child = parent->_right;
                         printf("RR at %d\n", adjustment_parent->_key);
@@ -391,9 +395,15 @@ public:
         return _size;
     }
 
+    void delete_root(){
+        delete _root;
+        print();
+    }
+
     void clear(){
         while(_size){
             delete _root;
+            print();
         }
     }
 

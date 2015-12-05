@@ -68,7 +68,7 @@ public:
     }
 
     bool push_front(const T data){
-        linkedlistelement<T>* new_element = new linkedlistelement<T>(this);
+        linkedlistelement<T>* const new_element = new linkedlistelement<T>(this);
         if(new_element == NULL){
             return false;
         }
@@ -85,7 +85,7 @@ public:
     }
 
     bool push_back(const T data){
-        linkedlistelement<T>* new_element = new linkedlistelement<T>(this);
+        linkedlistelement<T>* const new_element = new linkedlistelement<T>(this);
         if(new_element == NULL){
             return false;
         }
@@ -104,8 +104,6 @@ public:
     bool push_at(const int pos, const T data){
         if(pos == 0){
             return push_front(data);
-        }else if((unsigned int)pos == _size){
-            return push_back(data);
         }else if((unsigned int)pos < _size){
             linkedlistelement<T>* new_element = NULL;
             linkedlistelement<T>* element_position = NULL;
@@ -130,34 +128,38 @@ public:
             new_element->_prev->_next = new_element;
             new_element->_next->_prev = new_element;
             return true;
+        }else if((unsigned int)pos == _size){
+            return push_back(data);
         }
         return false;
     }
 
     bool pop_front(T* ret){
-        if(_head){
-            (*ret) = _head->_data;
-            delete _head;
-            return true;
+        if(_head == NULL){
+            return false;
         }
-        return false;
+        if(ret){
+            (*ret) = _head->_data;
+        }
+        delete _head;
+        return true;
     }
 
     bool pop_back(T* ret){
-        if(_tail){
-            (*ret) = _tail->_data;
-            delete _tail;
-            return true;
+        if(_tail == NULL){
+            return false;
         }
-        return false;
+        if(ret){
+            (*ret) = _tail->_data;
+        }
+        delete _tail;
+        return true;
     }
 
     bool pop_at(int pos, T* ret){
         if(pos == 0){
             return pop_front(ret);
-        }else if((unsigned int)pos == _size){
-            return pop_back(ret);
-        }else if((unsigned int)pos < _size){
+        }else if((unsigned int)pos < _size - 1){
             linkedlistelement<T>* element_position = NULL;
             int i = 0;
 
@@ -170,11 +172,50 @@ public:
                     element_position = element_position->_prev;
                 }
             }
-            (*ret) = element_position->_data;
+            if(ret){
+                (*ret) = element_position->_data;
+            }
             delete element_position;
             return true;
+        }else if((unsigned int)pos == _size - 1){
+            return pop_back(ret);
         }
         return false;
+    }
+
+    T* pick_front(){
+        return (_head?&_head->_data:NULL);
+    }
+
+    T* pick_back(){
+        return (_tail?&_tail->_data:NULL);
+    }
+
+    T* pick_at(const unsigned int position){
+        if(position == 0){
+            return pick_front();
+        }else if(position < _size - 1){
+            linkedlistelement<T>* element_position = NULL;
+            int i = 0;
+
+            if(_size - position > _size/2){
+                for(i = 0, element_position = _head ; i < position ; i++){
+                    element_position = element_position->_next;
+                }
+            }else{
+                for(i = 0, element_position = _tail ; i < (_size-1)-position ; i++){
+                    element_position = element_position->_prev;
+                }
+            }
+            return &element_position->_data;
+        }else if(position == _size - 1){
+            return pick_back();
+        }
+        return NULL;
+    }
+
+    T* operator [](const unsigned int index) {
+        return pick_at(index);
     }
 
     unsigned int size(){
@@ -182,8 +223,7 @@ public:
     }
 
     void clear(){
-        T tmp;
-        while(pop_back(&tmp));
+        while(pop_back(NULL));
     }
 
     friend class linkedlistelement<T>;

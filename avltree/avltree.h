@@ -1,10 +1,58 @@
 #ifndef _AVLTREE_H_
 #define _AVLTREE_H_
 
-#define BALANCED_DELETION
+/*
+ * BALANCED_DELETION: Delete a node in consideration of balance factor to minimize number of rotations.
+ * NONPRIMITIVE_KEY: Support a non-primitive type for key value.
+ */
 
 template <class KEY, class DATA> class avltreeelement;
 template <class KEY, class DATA> class avltree;
+
+#ifdef NONPRIMITIVE_KEY
+template<class KEY>
+bool less(const KEY key1, const KEY key2){
+    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
+        if(((unsigned char*)&key1)[i] < ((unsigned char*)&key2)[i]){
+            return true;
+        }
+        if(((unsigned char*)&key1)[i] > ((unsigned char*)&key2)[i]){
+            return false;
+        }
+    }
+    return false;
+}
+
+template<class KEY>
+bool greater(const KEY key1, const KEY key2){
+    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
+        if(((unsigned char*)&key1)[i] < ((unsigned char*)&key2)[i]){
+            return false;
+        }
+        if(((unsigned char*)&key1)[i] > ((unsigned char*)&key2)[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
+template<class KEY>
+bool equal(const KEY key1, const KEY key2){
+    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
+        if(((unsigned char*)&key1)[i] != ((unsigned char*)&key2)[i]){
+            return false;
+        }
+    }
+    return true;
+}
+
+template<class KEY>
+void copy(KEY* const key1, const KEY* const key2){
+    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
+        ((unsigned char*)&key1)[i] = ((unsigned char*)&key2)[i];
+    }
+}
+#endif
 
 template <class KEY, class DATA> class avltreeelement{
 private:
@@ -121,7 +169,11 @@ private:
         }
         while(adjustment_parent != NULL){
             if(adjustment_child){
+#ifdef NONPRIMITIVE_KEY
+                adjustment_parent->_balance_factor += (less<KEY>(adjustment_child->_key, adjustment_parent->_key)?-1:1);
+#else
                 adjustment_parent->_balance_factor += (adjustment_child->_key < adjustment_parent->_key?-1:1);
+#endif
             }
             if( adjustment_parent->_balance_factor == 1 || adjustment_parent->_balance_factor == -1 ){
                 break;
@@ -287,7 +339,11 @@ public:
             if(_root == NULL){
                 return false;
             }
+#ifdef NONPRIMITIVE_KEY
+            copy<KEY>(&_root->_key, &key);
+#else
             _root->_key = key;
+#endif
             _root->_data = data;
         }else{
             avltreeelement<KEY, DATA>* grand_parent = NULL;
@@ -295,25 +351,53 @@ public:
             avltreeelement<KEY, DATA>* child = NULL;
             while(
                   (
+          #ifdef NONPRIMITIVE_KEY
+                      (less<KEY>(key, parent->_key) && parent->_left == NULL)
+          #else
                       (key < parent->_key && parent->_left == NULL)
+          #endif
                       ||
+          #ifdef NONPRIMITIVE_KEY
+                      (greater<KEY>(key, parent->_key) && parent->_right == NULL)
+          #else
                       (key > parent->_key && parent->_right == NULL)
+          #endif
                       ||
+          #ifdef NONPRIMITIVE_KEY
+                      (equal<KEY>(key, parent->_key))
+          #else
                       key == parent->_key
+          #endif
                       )
                   ==
                   false
                   ){
+#ifdef NONPRIMITIVE_KEY
+                parent = (less<KEY>(key, parent->_key)?parent->_left:parent->_right);
+#else
                 parent = (key < parent->_key?parent->_left:parent->_right);
+#endif
             }
+#ifdef NONPRIMITIVE_KEY
+            if(equal<KEY>(key, parent->_key)){
+#else
             if(key == parent->_key){
+#endif
                 return false;
             }else{
+#ifdef NONPRIMITIVE_KEY
+                child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(this);
+#else
                 child = (key < parent->_key?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(this);
+#endif
                 if(child == NULL){
                     return false;
                 }
+#ifdef NONPRIMITIVE_KEY
+                copy<KEY>(&child->_key, &key);
+#else
                 child->_key = key;
+#endif
                 child->_data = data;
                 child->_parent = parent;
                 while(parent != NULL){
@@ -386,8 +470,16 @@ public:
         }
         avltreeelement<KEY, DATA>* target;
         target = _root;
+#ifdef NONPRIMITIVE_KEY
+        while(!equal<KEY>(key, target->_key)){
+#else
         while(key != target->_key){
+#endif
+#ifdef NONPRIMITIVE_KEY
+            target = (less<KEY>(key, target->_key)?target->_left:target->_right);
+#else
             target = (key < target->_key?target->_left:target->_right);
+#endif
             if(target == NULL){
                 return false;
             }
@@ -402,8 +494,16 @@ public:
         }
         avltreeelement<KEY, DATA>* target;
         target = _root;
+#ifdef NONPRIMITIVE_KEY
+        while(!equal<KEY>(key, target->_key)){
+#else
         while(key != target->_key){
+#endif
+#ifdef NONPRIMITIVE_KEY
+            target = (less<KEY>(key, target->_key)?target->_left:target->_right);
+#else
             target = (key < target->_key?target->_left:target->_right);
+#endif
             if(target == NULL){
                 return NULL;
             }

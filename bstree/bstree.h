@@ -7,7 +7,6 @@ template <class KEY, class DATA> class bstree;
 #ifdef NONPRIMITIVE_KEY
 template<class KEY>
 bool less(const KEY key1, const KEY key2){
-    printf("Size %u\n", sizeof(KEY));
     for(unsigned int i = 0 ; i < sizeof(KEY); i++){
         if(((unsigned char*)&key1)[i] < ((unsigned char*)&key2)[i]){
             return true;

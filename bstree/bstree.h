@@ -146,14 +146,16 @@ public:
     }
 
     bool insert(const KEY key, const DATA data){
-        if(sizeof(KEY) > 4)
         if(_root == NULL){
             _root = new bstreeelement<KEY, DATA>(this);
             if(_root == NULL){
                 return false;
             }
-            //_root->_key = key;
+#ifdef NONPRIMITIVE_KEY
             copy<KEY>(&_root->_key, &key);
+#else
+            _root->_key = key;
+#endif
             _root->_data = data;
         }else{
             bstreeelement<KEY, DATA>* parent;
@@ -203,8 +205,11 @@ public:
                 if(new_child == NULL){
                     return false;
                 }
-                //new_child->_key = key;
+#ifdef NONPRIMITIVE_KEY
                 copy<KEY>(&new_child->_key, &key);
+#else
+                new_child->_key = key;
+#endif
                 new_child->_data = data;
                 new_child->_parent = parent;
             }
@@ -223,8 +228,11 @@ public:
 #else
         while(key != target->_key){
 #endif
-            //target = (key < target->_key?target->_left:target->_right);
+#ifdef NONPRIMITIVE_KEY
             target = (less<KEY>(key, target->_key)?target->_left:target->_right);
+#else
+            target = (key < target->_key?target->_left:target->_right);
+#endif
             if(target == NULL){
                 return false;
             }
@@ -244,8 +252,11 @@ public:
 #else
         while(key != target->_key){
 #endif
-            //target = (key < target->_key?target->_left:target->_right);
+#ifdef NONPRIMITIVE_KEY
             target = (less<KEY>(key, target->_key)?target->_left:target->_right);
+#else
+            target = (key < target->_key?target->_left:target->_right);
+#endif
             if(target == NULL){
                 return NULL;
             }

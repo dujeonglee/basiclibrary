@@ -1,8 +1,56 @@
 #ifndef _BSTREE_H_
 #define _BSTREE_H_
 
+#define NONPRIMITIVE_KEY
+
 template <class KEY, class DATA> class bstreeelement;
 template <class KEY, class DATA> class bstree;
+
+#ifdef NONPRIMITIVE_KEY
+template<class KEY>
+bool less(const KEY key1, const KEY key2){
+    printf("Size %u\n", sizeof(KEY));
+    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
+        if(((unsigned char*)&key1)[i] < ((unsigned char*)&key2)[i]){
+            return true;
+        }
+        if(((unsigned char*)&key1)[i] > ((unsigned char*)&key2)[i]){
+            return false;
+        }
+    }
+    return false;
+}
+
+template<class KEY>
+bool greater(const KEY key1, const KEY key2){
+    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
+        if(((unsigned char*)&key1)[i] < ((unsigned char*)&key2)[i]){
+            return false;
+        }
+        if(((unsigned char*)&key1)[i] > ((unsigned char*)&key2)[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
+template<class KEY>
+bool equal(const KEY key1, const KEY key2){
+    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
+        if(((unsigned char*)&key1)[i] != ((unsigned char*)&key2)[i]){
+            return false;
+        }
+    }
+    return true;
+}
+
+template<class KEY>
+void copy(KEY* const key1, const KEY* const key2){
+    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
+        ((unsigned char*)&key1)[i] = ((unsigned char*)&key2)[i];
+    }
+}
+#endif
 
 template <class KEY, class DATA> class bstreeelement{
 private:
@@ -98,12 +146,14 @@ public:
     }
 
     bool insert(const KEY key, const DATA data){
+        if(sizeof(KEY) > 4)
         if(_root == NULL){
             _root = new bstreeelement<KEY, DATA>(this);
             if(_root == NULL){
                 return false;
             }
-            _root->_key = key;
+            //_root->_key = key;
+            copy<KEY>(&_root->_key, &key);
             _root->_data = data;
         }else{
             bstreeelement<KEY, DATA>* parent;
@@ -111,25 +161,50 @@ public:
             parent = _root;
             while(
                   (
+#ifdef NONPRIMITIVE_KEY
+                      (less<KEY>(key, parent->_key) && parent->_left == NULL)
+#else
                       (key < parent->_key && parent->_left == NULL)
+#endif
                       ||
+#ifdef NONPRIMITIVE_KEY
+                      (greater<KEY>(key, parent->_key)  && parent->_left == NULL)
+#else
                       (key > parent->_key && parent->_right == NULL)
+#endif
                       ||
+#ifdef NONPRIMITIVE_KEY
+                      equal<KEY>(key, parent->_key)
+#else
                       key == parent->_key
+#endif
                       )
                   ==
                   false
                   ){
+#ifdef NONPRIMITIVE_KEY
+                parent = (less<KEY>(key, parent->_key)?parent->_left:parent->_right);
+#else
                 parent = (key < parent->_key?parent->_left:parent->_right);
+#endif
             }
+#ifdef NONPRIMITIVE_KEY
+            if(equal<KEY>(key, parent->_key)){
+#else
             if(key == parent->_key){
+#endif
                 return false;
             }else{
+#ifdef NONPRIMITIVE_KEY
+                new_child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = new bstreeelement<KEY, DATA>(this);
+#else
                 new_child = (key < parent->_key?parent->_left:parent->_right) = new bstreeelement<KEY, DATA>(this);
+#endif
                 if(new_child == NULL){
                     return false;
                 }
-                new_child->_key = key;
+                //new_child->_key = key;
+                copy<KEY>(&new_child->_key, &key);
                 new_child->_data = data;
                 new_child->_parent = parent;
             }
@@ -143,8 +218,13 @@ public:
         }
         bstreeelement<KEY, DATA>* target;
         target = _root;
+#ifdef NONPRIMITIVE_KEY
+        while(!equal<KEY>(key, target->_key)){
+#else
         while(key != target->_key){
-            target = (key < target->_key?target->_left:target->_right);
+#endif
+            //target = (key < target->_key?target->_left:target->_right);
+            target = (less<KEY>(key, target->_key)?target->_left:target->_right);
             if(target == NULL){
                 return false;
             }
@@ -159,8 +239,13 @@ public:
         }
         bstreeelement<KEY, DATA>* target;
         target = _root;
+#ifdef NONPRIMITIVE_KEY
+        while(!equal<KEY>(key, target->_key)){
+#else
         while(key != target->_key){
-            target = (key < target->_key?target->_left:target->_right);
+#endif
+            //target = (key < target->_key?target->_left:target->_right);
+            target = (less<KEY>(key, target->_key)?target->_left:target->_right);
             if(target == NULL){
                 return NULL;
             }
@@ -173,7 +258,7 @@ public:
     }
 
     void clear(){
-        while(_size){
+        while(_root){
             delete _root;
         }
     }

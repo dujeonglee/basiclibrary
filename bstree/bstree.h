@@ -1,8 +1,6 @@
 #ifndef _BSTREE_H_
 #define _BSTREE_H_
 
-#define NONPRIMITIVE_KEY
-
 template <class KEY, class DATA> class bstreeelement;
 template <class KEY, class DATA> class bstree;
 

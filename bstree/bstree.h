@@ -1,6 +1,10 @@
 #ifndef _BSTREE_H_
 #define _BSTREE_H_
 
+/*
+ * NONPRIMITIVE_KEY: Support a non-primitive type for key value.
+ */
+
 template <class KEY, class DATA> class bstreeelement;
 template <class KEY, class DATA> class bstree;
 

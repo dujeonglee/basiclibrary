@@ -49,7 +49,7 @@ bool equal(const KEY key1, const KEY key2){
 template<class KEY>
 void copy(KEY* const key1, const KEY* const key2){
     for(unsigned int i = 0 ; i < sizeof(KEY); i++){
-        ((unsigned char*)&key1)[i] = ((unsigned char*)&key2)[i];
+        ((unsigned char*)key1)[i] = ((unsigned char*)key2)[i];
     }
 }
 #endif

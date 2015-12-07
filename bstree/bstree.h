@@ -9,47 +9,31 @@ template <class KEY, class DATA> class bstreeelement;
 template <class KEY, class DATA> class bstree;
 
 #ifdef NONPRIMITIVE_KEY
+#include <string.h>
+#endif
+
+template <class KEY, class DATA> class avltreeelement;
+template <class KEY, class DATA> class avltree;
+
+#ifdef NONPRIMITIVE_KEY
 template<class KEY>
 bool less(const KEY key1, const KEY key2){
-    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
-        if(((unsigned char*)&key1)[i] < ((unsigned char*)&key2)[i]){
-            return true;
-        }
-        if(((unsigned char*)&key1)[i] > ((unsigned char*)&key2)[i]){
-            return false;
-        }
-    }
-    return false;
+    return memcmp(&key1, &key2, sizeof(KEY))<0;
 }
 
 template<class KEY>
 bool greater(const KEY key1, const KEY key2){
-    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
-        if(((unsigned char*)&key1)[i] < ((unsigned char*)&key2)[i]){
-            return false;
-        }
-        if(((unsigned char*)&key1)[i] > ((unsigned char*)&key2)[i]){
-            return true;
-        }
-    }
-    return false;
+    return memcmp(&key1, &key2, sizeof(KEY))>0;
 }
 
 template<class KEY>
 bool equal(const KEY key1, const KEY key2){
-    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
-        if(((unsigned char*)&key1)[i] != ((unsigned char*)&key2)[i]){
-            return false;
-        }
-    }
-    return true;
+    return memcmp(&key1, &key2, sizeof(KEY))==0;
 }
 
 template<class KEY>
 void copy(KEY* const key1, const KEY* const key2){
-    for(unsigned int i = 0 ; i < sizeof(KEY); i++){
-        ((unsigned char*)&key1)[i] = ((unsigned char*)&key2)[i];
-    }
+    memcpy(key1, key2, sizeof(KEY));
 }
 #endif
 

@@ -5,15 +5,12 @@
  * NONPRIMITIVE_KEY: Support a non-primitive type for key value.
  */
 
-template <class KEY, class DATA> class bstreeelement;
-template <class KEY, class DATA> class bstree;
-
 #ifdef NONPRIMITIVE_KEY
 #include <string.h>
 #endif
 
-template <class KEY, class DATA> class avltreeelement;
-template <class KEY, class DATA> class avltree;
+template <class KEY, class DATA> class bstreeelement;
+template <class KEY, class DATA> class bstree;
 
 #ifdef NONPRIMITIVE_KEY
 template<class KEY>
@@ -155,7 +152,7 @@ public:
 #endif
                       ||
 #ifdef NONPRIMITIVE_KEY
-                      (greater<KEY>(key, parent->_key)  && parent->_left == NULL)
+                      (greater<KEY>(key, parent->_key)  && parent->_right == NULL)
 #else
                       (key > parent->_key && parent->_right == NULL)
 #endif

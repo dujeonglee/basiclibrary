@@ -71,10 +71,14 @@ private:
                 }
                 target->_parent = _parent;
 
-                if((_left?_right:_left)){
-                    (_left?_right:_left)->_parent = target;
+                //if((_left?_right:_left)){
+                //    (_left?_right:_left)->_parent = target;
+                //}
+                //(_left?target->_right:target->_left) = (_left?_right:_left);
+                if(_left && _right){
+                    _right->_parent = target;
+                    target->_right = _right;
                 }
-                (_left?target->_right:target->_left) = (_left?_right:_left);
             }else{
                 (_left?target->_parent->_right:target->_parent->_left) = (_left?target->_left:target->_right);
                 if((_left?target->_parent->_right:target->_parent->_left)){

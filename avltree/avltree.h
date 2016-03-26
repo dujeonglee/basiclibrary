@@ -5,7 +5,8 @@
  * BALANCED_DELETION: Delete a node in consideration of balance factor to minimize number of rotations.
  * NONPRIMITIVE_KEY: Support a non-primitive type for key value.
  */
-
+#include <iostream>
+#include <exception>
 #ifdef NONPRIMITIVE_KEY
 #include <string.h>
 #endif
@@ -316,10 +317,12 @@ public:
 
     bool insert(const KEY key, const DATA data){
         if(_root == NULL){
+            try{
             _root = new avltreeelement<KEY, DATA>(this);
-            if(_root == NULL){
+            }catch(std::exception& ex){
                 return false;
             }
+
 #ifdef NONPRIMITIVE_KEY
             copy<KEY>(&_root->_key, &key);
 #else
@@ -366,12 +369,13 @@ public:
 #endif
                 return false;
             }else{
+                try{
 #ifdef NONPRIMITIVE_KEY
                 child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(this);
 #else
                 child = (key < parent->_key?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(this);
 #endif
-                if(child == NULL){
+                }catch(std::exception& ex){
                     return false;
                 }
 #ifdef NONPRIMITIVE_KEY
@@ -500,6 +504,24 @@ public:
         while(_size){
             delete _root;
         }
+    }
+
+
+
+    unsigned int find_max_depth(avltreeelement<KEY, DATA>* node, unsigned int current_level, unsigned int * depth){
+        if(current_level > (*depth)){
+            (*depth) = current_level;
+        }
+        if(node->_left){
+            find_max_depth(node->_left, current_level + 1, depth);
+        }
+        if(node->_right){
+            find_max_depth(node->_right, current_level + 1, depth);
+        }
+    }
+
+    avltreeelement<KEY, DATA>* root(){
+        return _root;
     }
 
     friend class avltreeelement<KEY, DATA>;

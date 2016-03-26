@@ -1,6 +1,7 @@
 #ifndef _LINKEDLIST_H_
 #define _LINKEDLIST_H_
 
+#include <exception>
 template <class T> class linkedlistelement;
 template <class T> class linkedlist;
 
@@ -68,8 +69,9 @@ public:
     }
 
     bool push_front(const T data){
-        linkedlistelement<T>* const new_element = new linkedlistelement<T>(this);
-        if(new_element == NULL){
+        try{
+            linkedlistelement<T>* const new_element = new linkedlistelement<T>(this);
+        }catch(std::exception& ex){
             return false;
         }
         if(_head == NULL){
@@ -85,8 +87,9 @@ public:
     }
 
     bool push_back(const T data){
-        linkedlistelement<T>* const new_element = new linkedlistelement<T>(this);
-        if(new_element == NULL){
+        try{
+            linkedlistelement<T>* const new_element = new linkedlistelement<T>(this);
+        }catch(std::exception& ex){
             return false;
         }
         if(_tail == NULL){
@@ -118,8 +121,9 @@ public:
                     element_position = element_position->_prev;
                 }
             }
-            new_element = new linkedlistelement<T>(this);
-            if(new_element == NULL){
+            try{
+                new_element = new linkedlistelement<T>(this);
+            }catch(std::exception& ex){
                 return false;
             }
             new_element->_data = data;

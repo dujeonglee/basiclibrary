@@ -4,7 +4,7 @@
 /*
  * NONPRIMITIVE_KEY: Support a non-primitive type for key value.
  */
-
+#include <exception>
 #ifdef NONPRIMITIVE_KEY
 #include <string.h>
 #endif
@@ -133,10 +133,12 @@ public:
 
     bool insert(const KEY key, const DATA data){
         if(_root == NULL){
-            _root = new bstreeelement<KEY, DATA>(this);
-            if(_root == NULL){
+            try{
+                _root = new bstreeelement<KEY, DATA>(this);
+            }catch(std::exception& ex){
                 return false;
             }
+
 #ifdef NONPRIMITIVE_KEY
             copy<KEY>(&_root->_key, &key);
 #else
@@ -183,12 +185,13 @@ public:
 #endif
                 return false;
             }else{
+                try{
 #ifdef NONPRIMITIVE_KEY
                 new_child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = new bstreeelement<KEY, DATA>(this);
 #else
                 new_child = (key < parent->_key?parent->_left:parent->_right) = new bstreeelement<KEY, DATA>(this);
 #endif
-                if(new_child == NULL){
+                }catch(std::exception& ex){
                     return false;
                 }
 #ifdef NONPRIMITIVE_KEY

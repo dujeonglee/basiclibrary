@@ -5,7 +5,6 @@
  * BALANCED_DELETION: Delete a node in consideration of balance factor to minimize number of rotations.
  * NONPRIMITIVE_KEY: Support a non-primitive type for key value.
  */
-#include <iostream>
 #include <exception>
 #ifdef NONPRIMITIVE_KEY
 #include <string.h>
@@ -506,8 +505,7 @@ public:
         }
     }
 
-
-
+#ifdef DEBUG_AVL
     unsigned int find_max_depth(avltreeelement<KEY, DATA>* node, unsigned int current_level, unsigned int * depth){
         if(current_level > (*depth)){
             (*depth) = current_level;
@@ -523,6 +521,7 @@ public:
     avltreeelement<KEY, DATA>* root(){
         return _root;
     }
+#endif
 
     friend class avltreeelement<KEY, DATA>;
 };

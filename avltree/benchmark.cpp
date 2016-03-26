@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <ctime>
 #include <map>
+#define DEBUG_AVL
+//#define NONPRIMITIVE_KEY
+#define BALANCED_DELETION
 #include "avltree.h"
 
 int main()
@@ -11,7 +14,7 @@ int main()
     avltree<int, int> avl_tree;
     std::map<int, int> rb_tree;
 
-    printf("PRIMITIVE\n");
+    printf("NON-PRIMITIVE\n");
     printf("Sequential insert from 0 to 19999999\n");
     start = clock();
     for (unsigned int i = 0 ; i < 20000000 ; i++)
@@ -21,7 +24,7 @@ int main()
     end = clock();
     printf("AVL : %f sec\n", (double)(end-start)/(double)CLOCKS_PER_SEC);
     unsigned int depth = 0;
-    avl_tree.find_max_depth(avl_tree.root(), 0, &depth);
+    avl_tree.find_max_depth(avl_tree.root(), 1, &depth);
     printf("MAX Depth - %u\n", depth);
     start = clock();
     for (unsigned int i = 0 ; i < 20000000 ; i++)

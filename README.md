@@ -2,7 +2,8 @@
 basic data structure libraries for own study
 
 Performace analysis
- - avltree VS std::map: avltree shows dramatic performance against the conventional std::map. The results are as in the following. 
+ - linked list and bstree do not have much room for performance improvement due to their simplicty. Therefore, I do not make analysis on linked list and bstree.<br>
+ - For avltree, it shows outstanding performance against the conventional std::map. The results are as in the following.<br>
 
     * PRIMITIVE type (unsigned char, unsigned short, ...)<br>
      : Sequential insert keys from 0 to 19999999<br>

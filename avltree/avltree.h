@@ -2,9 +2,15 @@
 #define _AVLTREE_H_
 
 /*
- * BALANCED_DELETION: Delete a node in consideration of balance factor to minimize number of rotations.
- * NONPRIMITIVE_KEY: Support a non-primitive type for key value.
+ * BALANCED_DELETION (Default = Enabled): Delete a node in consideration of balance factor to minimize number of rotations.
+ * NONPRIMITIVE_KEY (Default = Disabled): Support a non-primitive type for key value.
+ * DEBUG_FUNCTIONS (Default = Enabled): Support debugging functions
  */
+
+#define BALANCED_DELETION
+//#define NONPRIMITIVE_KEY
+#define DEBUG_FUNCTIONS
+
 #include <exception>
 #ifdef NONPRIMITIVE_KEY
 #include <string.h>
@@ -505,21 +511,28 @@ public:
         }
     }
 
-#ifdef DEBUG_AVL
-    unsigned int find_max_depth(avltreeelement<KEY, DATA>* node, unsigned int current_level, unsigned int * depth){
-        if(current_level > (*depth)){
-            (*depth) = current_level;
-        }
-        if(node->_left){
-            find_max_depth(node->_left, current_level + 1, depth);
-        }
-        if(node->_right){
-            find_max_depth(node->_right, current_level + 1, depth);
+#ifdef DEBUG_FUNCTIONS
+public:
+    void check_max_depth_and_validity(unsigned int* depth, bool* valid){
+        (*depth) = 0;
+        (*valid) = true;
+        if(_root){
+            (*depth) = _calculate_max_depth_and_balance_factor(_root, valid);
         }
     }
 
-    avltreeelement<KEY, DATA>* root(){
-        return _root;
+private:
+    unsigned int _calculate_max_depth_and_balance_factor(avltreeelement<KEY, DATA>* node, bool* result){
+        unsigned int left = 0;
+        unsigned int right = 0;
+        if(node->_left){
+            left = _calculate_max_depth_and_balance_factor(node->_left, result);
+        }
+        if(node->_right){
+            right = _calculate_max_depth_and_balance_factor(node->_right, result);
+        }
+        (*result) = (*result) && (left>right?left-right < 2:right-left < 2);
+        return 1+(left>right?left:right);
     }
 #endif
 

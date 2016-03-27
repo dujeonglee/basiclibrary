@@ -2,9 +2,6 @@
 #include <stdlib.h>
 #include <ctime>
 #include <map>
-#define DEBUG_AVL
-//#define NONPRIMITIVE_KEY
-#define BALANCED_DELETION
 #include "avltree.h"
 
 int main()
@@ -14,7 +11,11 @@ int main()
     avltree<int, int> avl_tree;
     std::map<int, int> rb_tree;
 
+#ifdef NONPRIMITIVE_KEY
     printf("NON-PRIMITIVE\n");
+#else
+    printf("PRIMITIVE\n");
+#endif
     printf("Sequential insert from 0 to 19999999\n");
     start = clock();
     for (unsigned int i = 0 ; i < 20000000 ; i++)
@@ -23,9 +24,7 @@ int main()
     }
     end = clock();
     printf("AVL : %f sec\n", (double)(end-start)/(double)CLOCKS_PER_SEC);
-    unsigned int depth = 0;
-    avl_tree.find_max_depth(avl_tree.root(), 1, &depth);
-    printf("MAX Depth - %u\n", depth);
+
     start = clock();
     for (unsigned int i = 0 ; i < 20000000 ; i++)
     {
@@ -73,4 +72,25 @@ int main()
     }
     end = clock();
     printf("RB : %f sec\n", (double)(end-start)/(double)CLOCKS_PER_SEC);
+
+    unsigned int depth;
+    bool valid;
+    while(avl_tree.size() < 10240){
+        avl_tree.insert(rand()%10240, 0);
+        avl_tree.check_max_depth_and_validity(&depth, &valid);
+        if(valid == false){
+            printf("Tree does not meet AVL constraints\n");
+            return 0;
+        }
+    }
+    printf("ADD Done %u %u\n", depth, avl_tree.size());
+    while(avl_tree.size() > 0){
+        avl_tree.remove(rand()%10240);
+        avl_tree.check_max_depth_and_validity(&depth, &valid);
+        if(valid == false){
+            printf("Tree does not meet AVL constraints\n");
+            return 0;
+        }
+    }
+    printf("Delete Done %u %u\n", depth, avl_tree.size());
 }

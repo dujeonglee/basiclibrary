@@ -9,24 +9,24 @@ Performace analysis
        -> avltree : 8.220326 sec<br>
        -> std::map : 18.710377 sec<br>
 
-     : Lookup keys from 0 to 19999999
-       -> avltree : 7.364360 sec
-       -> std::map : 11.209790 sec
+     : Lookup keys from 0 to 19999999<br>
+       -> avltree : 7.364360 sec<br>
+       -> std::map : 11.209790 sec<br>
 
-     : Delete all elements
-       -> avltree : 4.774075 sec
-       -> std::map : 14.209195 sec
+     : Delete all elements<br>
+       -> avltree : 4.774075 sec<br>
+       -> std::map : 14.209195 sec<br>
 
-    * NON-PRIMITIVE (structure, classes, ...)
-     : Sequential insert from 0 to 19999999
-       -> avltree : 14.797637 sec
-       -> std::map : 18.878864 sec
+    * NON-PRIMITIVE (structure, classes, ...)<br>
+     : Sequential insert from 0 to 19999999<br>
+       -> avltree : 14.797637 sec<br>
+       -> std::map : 18.878864 sec<br>
 
-     : Lookup 0 to 19999999
-       -> avltree : 7.413985 sec
-       -> std::map : 11.157555 sec
+     : Lookup 0 to 19999999<br>
+       -> avltree : 7.413985 sec<br>
+       -> std::map : 11.157555 sec<br>
 
-     : Delete all element
-       -> avltree : 8.253727 sec
-       -> std::map : 14.500771 sec
+     : Delete all element<br>
+       -> avltree : 8.253727 sec<br>
+       -> std::map : 14.500771 sec<br>
 

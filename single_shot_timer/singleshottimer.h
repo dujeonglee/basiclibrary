@@ -23,10 +23,12 @@ public:
         _thread = std::thread([&](){
             this->_lock.lock();
             if(this->_lock.try_lock_for(std::chrono::milliseconds(this->_timeout)) == true){
-                this->_cancel_handler();
+                if(this->_cancel_handler != nullptr)
+                    this->_cancel_handler();
             }else{
                 this->_lock.unlock();
-                this->_timeout_handler();
+                if(this->_timeout_handler != nullptr)
+                    this->_timeout_handler();
             }
             return;
         });
@@ -37,4 +39,28 @@ public:
     }
 };
 
+#endif
+
+#if 0
+//Example
+#include "singleshottimer.h"
+#include <iostream>
+
+void cancel(){
+    std::cout << "cancel\n";
+}
+
+void timeout(){
+    std::cout << "timeout\n";
+}
+
+int main(){
+    singleshottimer timer;
+    std::cout<<"Timeout for: " << 1000 << std::endl;
+    timer.start(1000, cancel, timeout);
+    std::cout<<"Sleep: " << 100 << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    timer.cancel();
+    while(1);
+}
 #endif

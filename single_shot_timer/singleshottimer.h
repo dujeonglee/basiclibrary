@@ -19,6 +19,7 @@ public:
     };
     ~singleshottimer(){
         _is_destroyed = true;
+        _lock.unlock();
     };
     void start(unsigned int timeout_milles, std::function <void (void)> cancel_handler, std::function <void (void)> timeout_handler){
         _timeout = timeout_milles;

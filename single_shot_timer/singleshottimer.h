@@ -38,6 +38,7 @@ public:
             }
             return;
         });
+        _thread.detach();
     }
 
     void cancel(){

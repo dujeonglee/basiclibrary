@@ -11,10 +11,15 @@ private:
     std::function <void (void)> _cancel_handler;
     std::function <void (void)> _timeout_handler;
     std::thread _thread;
+    bool _is_destroyed;
 
 public:
-    explicit singleshottimer(){};
-    ~singleshottimer(){};
+    explicit singleshottimer(){
+        _is_destroyed = false;
+    };
+    ~singleshottimer(){
+        _is_destroyed = true;
+    };
     void start(unsigned int timeout_milles, std::function <void (void)> cancel_handler, std::function <void (void)> timeout_handler){
         _timeout = timeout_milles;
         _cancel_handler = cancel_handler;
@@ -22,12 +27,14 @@ public:
         _thread = std::thread([&](){
             this->_lock.lock();
             if(this->_lock.try_lock_for(std::chrono::milliseconds(this->_timeout)) == true){
-                if(this->_cancel_handler != nullptr)
+                if(this->_cancel_handler != nullptr && _is_destroyed == false){
                     this->_cancel_handler();
+                }
             }else{
                 this->_lock.unlock();
-                if(this->_timeout_handler != nullptr)
+                if(this->_timeout_handler != nullptr && _is_destroyed == false){
                     this->_timeout_handler();
+                }
             }
             return;
         });

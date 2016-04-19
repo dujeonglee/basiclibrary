@@ -12,6 +12,7 @@
 #define DEBUG_FUNCTIONS
 
 #include <exception>
+#include <functional>
 #ifdef NONPRIMITIVE_KEY
 #include <string.h>
 #endif
@@ -535,7 +536,37 @@ private:
         return 1+(left>right?left:right);
     }
 #endif
+private:
+    void _perform_for_all_data(avltreeelement<KEY, DATA>* node, std::function <void (DATA&)> func){
+        func(node->_data);
+        if(node->_left){
+            _perform_for_all_data(node->_left, func);
+        }
+        if(node->_right){
+            _perform_for_all_data(node->_right, func);
+        }
+    }
 
+    void _perform_for_all_key(avltreeelement<KEY, DATA>* node, std::function <void (KEY&)> func){
+        func(node->_key);
+        if(node->_left){
+            _perform_for_all_key(node->_left, func);
+        }
+        if(node->_right){
+            _perform_for_all_key(node->_right, func);
+        }
+    }
+public:
+    void perform_for_all_data(std::function <void (DATA&)> func){
+        if(_root){
+            _perform_for_all_data(_root, func);
+        }
+    }
+    void perform_for_all_key(std::function <void (KEY&)> func){
+        if(_root){
+            _perform_for_all_key(_root, func);
+        }
+    }
     friend class avltreeelement<KEY, DATA>;
 };
 

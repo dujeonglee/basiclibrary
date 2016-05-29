@@ -583,12 +583,24 @@ private:
 public:
     void perform_for_all_data(std::function <void (DATA&)> func){
         if(_root){
+#ifdef THREAD_SAFE
+            _lock.lock();
+#endif
             _perform_for_all_data(_root, func);
+#ifdef THREAD_SAFE
+            _lock.unlock();
+#endif
         }
     }
     void perform_for_all_key(std::function <void (KEY&)> func){
         if(_root){
+#ifdef THREAD_SAFE
+            _lock.lock();
+#endif
             _perform_for_all_key(_root, func);
+#ifdef THREAD_SAFE
+            _lock.unlock();
+#endif
         }
     }
     friend class avltreeelement<KEY, DATA>;

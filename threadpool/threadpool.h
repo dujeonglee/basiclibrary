@@ -14,9 +14,11 @@ class ThreadPool
 {
     class WorkerThread
     {
+    public:
         enum STATE : unsigned char{
             RUNNING = 0,
             DESTROY,
+            COMPLETE_ALL_TASK_AND_DESTROY
         };
     private:
         ThreadPool* _pool;
@@ -31,7 +33,6 @@ class ThreadPool
         WorkerThread(ThreadPool* pool) : _pool(pool), _state(STATE::RUNNING)
         {
             _thread = new std::thread([this](){
-                std::cout<<std::this_thread::get_id()<<"Thread Create\n";
                 for(;;)
                 {
                     std::function<void()> task = nullptr;
@@ -40,6 +41,10 @@ class ThreadPool
                         while(!_should_wakeup())
                             _pool->_condition.wait(lock);
                         if(this->_state == STATE::DESTROY)
+                        {
+                            return;
+                        }
+                        if(COMPLETE_ALL_TASK_AND_DESTROY && _pool->_task_queue.empty())
                         {
                             return;
                         }
@@ -55,10 +60,20 @@ class ThreadPool
             });
         }
 
-        ~WorkerThread(){
-            _state = STATE::DESTROY;
+        ~WorkerThread()
+        {
             _pool->_condition.notify_all();
             _thread->join();
+        }
+
+        STATE state()
+        {
+            return _state.load();
+        }
+
+        void state(STATE s)
+        {
+            _state = s;
         }
     };
 private:
@@ -105,6 +120,7 @@ public:
         {
             while(size < _worker_queue.size())
             {
+                _worker_queue.front()->state(WorkerThread::DESTROY);
                 _worker_queue.pop();
             }
         }
@@ -122,12 +138,20 @@ public:
         std::unique_lock<std::mutex> lock(_worker_queue_lock);
         while(!_worker_queue.empty())
         {
+            _worker_queue.front()->state(WorkerThread::COMPLETE_ALL_TASK_AND_DESTROY);
             _worker_queue.pop();
         }
     }
 
     void enqueue(std::function<void()> task)
     {
+        {
+            std::unique_lock<std::mutex> lock(_worker_queue_lock);
+            if(_worker_queue.front()->state() != WorkerThread::RUNNING)
+            {
+                return;
+            }
+        }
         {
             std::unique_lock<std::mutex> lock(_task_queue_lock);
             _task_queue.push(task);

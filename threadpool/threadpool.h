@@ -147,7 +147,7 @@ public:
     {
         {
             std::unique_lock<std::mutex> lock(_worker_queue_lock);
-            if(_worker_queue.front()->state() != WorkerThread::RUNNING)
+            if((_worker_queue.empty() == true) || (_worker_queue.front()->state() != WorkerThread::RUNNING))
             {
                 return;
             }

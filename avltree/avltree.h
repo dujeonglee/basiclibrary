@@ -4,22 +4,17 @@
 /*
  * BALANCED_DELETION (Default = Enabled): Delete a node in consideration of balance factor to minimize number of rotations.
  * NONPRIMITIVE_KEY (Default = Disabled): Support a non-primitive type for key value.
- * DEBUG_FUNCTIONS (Default = Enabled): Support debugging functions
- * THREAD_SAFE (Default = Disabled): Guarantee thread safe operation
+ * DEBUG_FUNCTIONS (Default = Disabled): Support debugging functions
  */
 
 #define BALANCED_DELETION
 //#define NONPRIMITIVE_KEY
-#define DEBUG_FUNCTIONS
-//#define THREAD_SAFE
+//#define DEBUG_FUNCTIONS
 
 #include <exception>
 #include <functional>
 #ifdef NONPRIMITIVE_KEY
 #include <string.h>
-#endif
-#ifdef THREAD_SAFE
-#include <mutex>
 #endif
 
 
@@ -28,17 +23,17 @@ template <class KEY, class DATA> class avltree;
 
 #ifdef NONPRIMITIVE_KEY
 template<class KEY>
-bool less(const KEY key1, const KEY key2){
+bool less(const KEY& key1, const KEY& key2){
     return memcmp(&key1, &key2, sizeof(KEY))<0;
 }
 
 template<class KEY>
-bool greater(const KEY key1, const KEY key2){
+bool greater(const KEY& key1, const KEY& key2){
     return memcmp(&key1, &key2, sizeof(KEY))>0;
 }
 
 template<class KEY>
-bool equal(const KEY key1, const KEY key2){
+bool equal(const KEY& key1, const KEY& key2){
     return memcmp(&key1, &key2, sizeof(KEY))==0;
 }
 
@@ -56,15 +51,15 @@ private:
     avltreeelement<KEY, DATA>* _left;
     avltreeelement<KEY, DATA>* _right;
     char _balance_factor;
-    avltree<KEY, DATA>* _tree;
+    avltree<KEY, DATA> _tree;
 
-    avltreeelement<KEY, DATA>(avltree<KEY, DATA>* t){
+    avltreeelement<KEY, DATA>(avltree<KEY, DATA>& t){
         _parent = nullptr;
         _left = nullptr;
         _right = nullptr;
         _balance_factor = 0;
         _tree = t;
-        _tree->_size++;
+        _tree._size++;
     }
 
     ~avltreeelement<KEY, DATA>(){
@@ -77,7 +72,7 @@ private:
             if(_parent){
                 (_parent->_left == this?_parent->_left:_parent->_right) = nullptr;
             }else{
-                _tree->_root = nullptr;
+                _tree._root = nullptr;
             }
         }else{
             avltreeelement<KEY, DATA>* target;
@@ -157,8 +152,8 @@ private:
                     target->_right->_parent = target;
                 }
             }
-            if(this == _tree->_root){
-                _tree->_root = target;
+            if(this == _tree._root){
+                _tree._root = target;
             }
         }
         while(adjustment_parent != nullptr){
@@ -177,7 +172,7 @@ private:
                 if(adjustment_parent->_balance_factor == 2){
                     avltreeelement<KEY, DATA>* const parent = grand_parent->_left;
                     if(parent->_balance_factor == 1 || parent->_balance_factor == 0){
-                        _tree->_right_rotation(grand_parent, parent);
+                        _tree._right_rotation(grand_parent, parent);
                         if(parent->_balance_factor == 1){
                             grand_parent->_balance_factor = 0;
                             parent->_balance_factor = 0;
@@ -192,8 +187,8 @@ private:
                     }else{ // adjustment_parent->_left && adjustment_parent->_left->_right
                         avltreeelement<KEY, DATA>* const child = parent->_right;
 
-                        _tree->_left_rotation(parent, child);
-                        _tree->_right_rotation(grand_parent, child);
+                        _tree._left_rotation(parent, child);
+                        _tree._right_rotation(grand_parent, child);
                         if(child->_balance_factor == 0){
                             grand_parent->_balance_factor = 0;
                             parent->_balance_factor = 0;
@@ -216,7 +211,7 @@ private:
                 }else{ // adjustment_parent->_balance_factor == -2
                     avltreeelement<KEY, DATA>* const parent = grand_parent->_right;
                     if(parent->_balance_factor == -1|| parent->_balance_factor == 0){
-                        _tree->_left_rotation(grand_parent, parent);
+                        _tree._left_rotation(grand_parent, parent);
                         if(parent->_balance_factor == -1){
                             grand_parent->_balance_factor = 0;
                             parent->_balance_factor = 0;
@@ -231,8 +226,8 @@ private:
                     }else{ // adjustment_parent->_right && adjustment_parent->_right->_left
                         avltreeelement<KEY, DATA>* const child = parent->_left;
 
-                        _tree->_right_rotation(parent, child);
-                        _tree->_left_rotation(grand_parent, child);
+                        _tree._right_rotation(parent, child);
+                        _tree._left_rotation(grand_parent, child);
                         if(child->_balance_factor == 0){
                             grand_parent->_balance_factor = 0;
                             parent->_balance_factor = 0;
@@ -256,7 +251,7 @@ private:
                 adjustment_parent = adjustment_parent->_parent;
             }
         }
-        _tree->_size--;
+        _tree._size--;
     }
 public:
     avltreeelement<KEY, DATA> &operator = (const avltreeelement<KEY, DATA> &other) {
@@ -273,9 +268,6 @@ template <class KEY, class DATA> class avltree {
 private:
     avltreeelement<KEY, DATA>* _root;
     unsigned int _size;
-#ifdef THREAD_SAFE
-    std::mutex _lock;
-#endif
 
     void _left_rotation(avltreeelement<KEY, DATA>* const parent, avltreeelement<KEY, DATA>* const child){
         if(parent->_right != child){
@@ -330,15 +322,13 @@ public:
         }
     }
 
-    bool insert(const KEY key, const DATA data){
-#ifdef THREAD_SAFE
-        std::lock_guard<std::mutex> lock(_lock);
-#endif
+    bool insert(const KEY& key, const DATA& data){
         if(_root == nullptr){
             try{
-            _root = new avltreeelement<KEY, DATA>(this);
-            }catch(std::exception& ex){
-                return false;
+            _root = new avltreeelement<KEY, DATA>(*this);
+            }catch(const std::bad_alloc& ex){
+                _root = nullptr;
+                throw ex;
             }
 
 #ifdef NONPRIMITIVE_KEY
@@ -389,12 +379,17 @@ public:
             }else{
                 try{
 #ifdef NONPRIMITIVE_KEY
-                child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(this);
+                child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(*this);
 #else
-                child = (key < parent->_key?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(this);
+                child = (key < parent->_key?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(*this);
 #endif
-                }catch(std::exception& ex){
-                    return false;
+                }catch(const std::bad_alloc& ex){
+#ifdef NONPRIMITIVE_KEY
+                      child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = nullptr;
+#else
+                      child = (key < parent->_key?parent->_left:parent->_right) = nullptr;
+#endif
+                      throw ex;
                 }
 #ifdef NONPRIMITIVE_KEY
                 copy<KEY>(&child->_key, &key);
@@ -467,10 +462,7 @@ public:
         return true;
     }
 
-    bool remove(const KEY key){
-#ifdef THREAD_SAFE
-        std::lock_guard<std::mutex> lock(_lock);
-#endif
+    bool remove(const KEY& key){
         if(_root == nullptr){
             return false;
         }
@@ -494,10 +486,7 @@ public:
         return true;
     }
 
-    DATA* find(const KEY key){
-#ifdef THREAD_SAFE
-        std::lock_guard<std::mutex> lock(_lock);
-#endif
+    DATA* find(const KEY& key){
         if(_root == nullptr){
             return nullptr;
         }
@@ -521,16 +510,10 @@ public:
     }
 
     unsigned int size(){
-#ifdef THREAD_SAFE
-        std::lock_guard<std::mutex> lock(_lock);
-#endif
         return _size;
     }
 
     void clear(){
-#ifdef THREAD_SAFE
-        std::lock_guard<std::mutex> lock(_lock);
-#endif
         while(_size){
             delete _root;
         }
@@ -583,24 +566,12 @@ private:
 public:
     void perform_for_all_data(std::function <void (DATA&)> func){
         if(_root){
-#ifdef THREAD_SAFE
-            _lock.lock();
-#endif
             _perform_for_all_data(_root, func);
-#ifdef THREAD_SAFE
-            _lock.unlock();
-#endif
         }
     }
     void perform_for_all_key(std::function <void (KEY&)> func){
         if(_root){
-#ifdef THREAD_SAFE
-            _lock.lock();
-#endif
             _perform_for_all_key(_root, func);
-#ifdef THREAD_SAFE
-            _lock.unlock();
-#endif
         }
     }
     friend class avltreeelement<KEY, DATA>;

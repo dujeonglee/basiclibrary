@@ -44,7 +44,7 @@ class ThreadPool
                         {
                             return;
                         }
-                        if(COMPLETE_ALL_TASK_AND_DESTROY && _pool->_task_queue.empty())
+                        if((this->_state == STATE::COMPLETE_ALL_TASK_AND_DESTROY) && (_pool->_task_queue.empty()))
                         {
                             return;
                         }

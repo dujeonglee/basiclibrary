@@ -135,7 +135,7 @@ public:
         if(_root == NULL){
             try{
                 _root = new bstreeelement<KEY, DATA>(this);
-            }catch(std::exception& ex){
+            }catch(const std::exception& ex){
                 return false;
             }
 
@@ -191,7 +191,7 @@ public:
 #else
                 new_child = (key < parent->_key?parent->_left:parent->_right) = new bstreeelement<KEY, DATA>(this);
 #endif
-                }catch(std::exception& ex){
+                }catch(const std::exception& ex){
                     return false;
                 }
 #ifdef NONPRIMITIVE_KEY

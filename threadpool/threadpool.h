@@ -89,7 +89,15 @@ public:
         std::unique_lock<std::mutex> lock(_worker_queue_lock);
         for(unsigned i = 0 ; i < std::thread::hardware_concurrency() ; i++)
         {
-            _worker_queue.emplace(new WorkerThread(this));
+            try
+            {
+                _worker_queue.emplace(new WorkerThread(this));
+            }
+            catch(const std::bad_alloc &ex)
+            {
+                std::cout<<ex.what()<<std::endl;
+                break;
+            }
         }
         std::cout<<_worker_queue.size()<<" threads\n";
     }
@@ -99,7 +107,15 @@ public:
         std::unique_lock<std::mutex> lock(_worker_queue_lock);
         for(size_t i = 0 ; i < size ; i++)
         {
-            _worker_queue.emplace(new WorkerThread(this));
+            try
+            {
+                _worker_queue.emplace(new WorkerThread(this));
+            }
+            catch(const std::bad_alloc &ex)
+            {
+                std::cout<<ex.what()<<std::endl;
+                break;
+            }
         }
         std::cout<<_worker_queue.size()<<" threads\n";
     }
@@ -128,7 +144,15 @@ public:
         {
             while(size > _worker_queue.size())
             {
-                _worker_queue.emplace(new WorkerThread(this));
+                try
+                {
+                    _worker_queue.emplace(new WorkerThread(this));
+                }
+                catch(const std::bad_alloc &ex)
+                {
+                    std::cout<<ex.what()<<std::endl;
+                    break;
+                }
             }
         }
     }

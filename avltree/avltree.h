@@ -328,7 +328,7 @@ public:
             _root = new avltreeelement<KEY, DATA>(*this);
             }catch(const std::bad_alloc& ex){
                 _root = nullptr;
-                throw ex;
+                return false;
             }
 
 #ifdef NONPRIMITIVE_KEY
@@ -389,7 +389,7 @@ public:
 #else
                       child = (key < parent->_key?parent->_left:parent->_right) = nullptr;
 #endif
-                      throw ex;
+                      return false;
                 }
 #ifdef NONPRIMITIVE_KEY
                 copy<KEY>(&child->_key, &key);

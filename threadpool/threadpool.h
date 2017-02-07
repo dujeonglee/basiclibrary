@@ -120,7 +120,7 @@ public:
         }
         try
         {
-            _task_queue.resize(PRIORITY_LEVEL);
+            _task_queue.resize((PRIORITY_LEVEL>1?PRIORITY_LEVEL:1));
         }
         catch(std::bad_alloc& ex)
         {

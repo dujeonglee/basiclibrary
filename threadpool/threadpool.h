@@ -215,6 +215,7 @@ public:
             std::unique_lock<std::mutex> lock(_task_queue_lock);
             return _task_queue[priority].size();
         }
+        return 0;
     }
 };
 

@@ -1,6 +1,6 @@
 // condition_variable::wait (with predicate)
 #include <iostream>           // std::cout
-#include "threadpool.h"
+#include "ThreadPool.h"
 
 int main ()
 {

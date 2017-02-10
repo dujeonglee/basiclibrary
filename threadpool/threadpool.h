@@ -45,7 +45,6 @@ class ThreadPool
         WorkerThread(ThreadPool* pool) : _pool(pool), _state(STATE::RUNNING)
         {
             _thread = new std::thread([this](){
-                while(PRIORITY_LEVEL != _pool->_task_queue.size());
                 for(;;)
                 {
                     std::function<void()> task = nullptr;
@@ -105,7 +104,14 @@ private:
 public:
     ThreadPool()
     {
-        std::unique_lock<std::mutex> lock(_worker_queue_lock);
+        try
+        {
+            _task_queue.resize((PRIORITY_LEVEL>1?PRIORITY_LEVEL:1));
+        }
+        catch(std::bad_alloc& ex)
+        {
+            std::cout<<ex.what()<<std::endl;
+        }
         for(unsigned int i = 0 ; i < (INITIAL_THREADS>1?INITIAL_THREADS:1) ; i++)
         {
             try
@@ -117,14 +123,6 @@ public:
                 std::cout<<ex.what()<<std::endl;
                 break;
             }
-        }
-        try
-        {
-            _task_queue.resize((PRIORITY_LEVEL>1?PRIORITY_LEVEL:1));
-        }
-        catch(std::bad_alloc& ex)
-        {
-            std::cout<<ex.what()<<std::endl;
         }
         std::cout<<_worker_queue.size()<<" threads with ";
         std::cout<<_task_queue.size()<<" priorities\n";

@@ -101,6 +101,8 @@ public:
                     }
                     else
                     {
+                        // Yield CPU Resource to other threads
+                        std::this_thread::sleep_for (std::chrono::milliseconds(0));
                         continue;
                     }
                 }

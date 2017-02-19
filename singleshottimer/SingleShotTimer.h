@@ -5,13 +5,13 @@
 
 typedef std::chrono::time_point<std::chrono::steady_clock> SSTTime;
 
-struct TimerInfo
+class TimerInfo
 {
+public:
     std::atomic<bool> m_Active;
-    std::chrono::time_point<std::chrono::steady_clock> m_TargetTime;
+    SSTTime m_TargetTime;
     std::function <void()> m_TimeoutHandler;
     std::function <void()> m_CancelHandler;
-    std::string m_Label;
 };
 
 class SingleShotTimer
@@ -19,26 +19,15 @@ class SingleShotTimer
 private:
     std::mutex m_Lock;
     std::condition_variable m_Condition;
-    unsigned long m_MaxTimers;
-    std::vector<TimerInfo*> m_MinHeap;
-    unsigned long m_Timers;
+    std::vector<TimerInfo*> m_ActiveTimerInfoList;
+    std::vector<TimerInfo*> m_TimerInfoPool;
     std::thread m_Thread;
-    ThreadPool<1, 3> m_ThreadPool;
+    ThreadPool<1, 4> m_ThreadPool;
     bool m_Running;
 
 public:
-    SingleShotTimer(unsigned long timers = 32):m_MaxTimers(timers)
+    SingleShotTimer()
     {
-        try
-        {
-            m_MinHeap.resize(m_MaxTimers, nullptr);
-        }
-        catch(const std::bad_alloc& ex)
-        {
-            m_MaxTimers = 0;
-            return;
-        }
-        m_Timers = 0;
         m_Running = true;
         m_Thread = std::thread([this]()
         {
@@ -48,52 +37,54 @@ public:
                 TimerInfo* temp = nullptr;
                 {
                     std::unique_lock<std::mutex> lock(m_Lock);
-                    while(m_Timers == 0)
+                    while(m_ActiveTimerInfoList.size() == 0)
                     {
                         m_Condition.wait(lock);
                     }
-                    if(m_MinHeap[0]->m_TargetTime <= std::chrono::steady_clock::now())
+                    if(m_ActiveTimerInfoList[0]->m_TargetTime <= std::chrono::steady_clock::now())
                     {
-                        task = m_MinHeap[0];
-                        m_MinHeap[0] = m_MinHeap[--m_Timers];
+                        task = m_ActiveTimerInfoList[0];
+                        m_ActiveTimerInfoList[0] = m_ActiveTimerInfoList.back();
+                        m_ActiveTimerInfoList.pop_back();
                         // re-arrang heap
+                        const unsigned long TIMERS = m_ActiveTimerInfoList.size();
                         {
                             unsigned long position = 0;
-                            while(position < m_Timers)
+                            while(position < TIMERS)
                             {
-                                if(position*2+2 < m_Timers)
+                                if(position*2+2 < TIMERS)
                                 {
-                                    temp = ( m_MinHeap[position]->m_TargetTime < m_MinHeap[position*2+1]->m_TargetTime?
-                                                 ( m_MinHeap[position]->m_TargetTime < m_MinHeap[position*2+2]->m_TargetTime ? m_MinHeap[position] : m_MinHeap[position*2+2]) :
-                                                 ( m_MinHeap[position*2+1]->m_TargetTime < m_MinHeap[position*2+2]->m_TargetTime ? m_MinHeap[position*2+1] : m_MinHeap[position*2+2]));
-                                    if(temp == m_MinHeap[position])
+                                    temp = ( m_ActiveTimerInfoList[position]->m_TargetTime < m_ActiveTimerInfoList[position*2+1]->m_TargetTime?
+                                                 ( m_ActiveTimerInfoList[position]->m_TargetTime < m_ActiveTimerInfoList[position*2+2]->m_TargetTime ? m_ActiveTimerInfoList[position] : m_ActiveTimerInfoList[position*2+2]) :
+                                                 ( m_ActiveTimerInfoList[position*2+1]->m_TargetTime < m_ActiveTimerInfoList[position*2+2]->m_TargetTime ? m_ActiveTimerInfoList[position*2+1] : m_ActiveTimerInfoList[position*2+2]));
+                                    if(temp == m_ActiveTimerInfoList[position])
                                     {
                                         break;
                                     }
-                                    else if(temp == m_MinHeap[position*2+1])
+                                    else if(temp == m_ActiveTimerInfoList[position*2+1])
                                     {
-                                        m_MinHeap[position*2+1] = m_MinHeap[position];
-                                        m_MinHeap[position] = temp;
+                                        m_ActiveTimerInfoList[position*2+1] = m_ActiveTimerInfoList[position];
+                                        m_ActiveTimerInfoList[position] = temp;
                                         position = position*2+1;
                                     }
                                     else
                                     {
-                                        m_MinHeap[position*2+2] = m_MinHeap[position];
-                                        m_MinHeap[position] = temp;
+                                        m_ActiveTimerInfoList[position*2+2] = m_ActiveTimerInfoList[position];
+                                        m_ActiveTimerInfoList[position] = temp;
                                         position = position*2+2;
                                     }
                                 }
-                                else if(position*2+1 < m_Timers)
+                                else if(position*2+1 < TIMERS)
                                 {
-                                    temp = ( m_MinHeap[position]->m_TargetTime < m_MinHeap[position*2+1]->m_TargetTime? m_MinHeap[position] : m_MinHeap[position*2+1]);
-                                    if(temp == m_MinHeap[position])
+                                    temp = ( m_ActiveTimerInfoList[position]->m_TargetTime < m_ActiveTimerInfoList[position*2+1]->m_TargetTime? m_ActiveTimerInfoList[position] : m_ActiveTimerInfoList[position*2+1]);
+                                    if(temp == m_ActiveTimerInfoList[position])
                                     {
                                         break;
                                     }
                                     else
                                     {
-                                        m_MinHeap[position*2+1] = m_MinHeap[position];
-                                        m_MinHeap[position] = temp;
+                                        m_ActiveTimerInfoList[position*2+1] = m_ActiveTimerInfoList[position];
+                                        m_ActiveTimerInfoList[position] = temp;
                                         position = position*2+1;
                                     }
                                 }
@@ -106,25 +97,23 @@ public:
                     }
                     else
                     {
-                        std::this_thread::sleep_for (std::chrono::milliseconds(1));
+                        continue;
                     }
                 }
                 if(task && task->m_Active)
                 {
-                    m_ThreadPool.enqueue([task](){
+                    m_ThreadPool.enqueue([this, task](){
                         if(task->m_TimeoutHandler)
                         {
                             task->m_TimeoutHandler();
                         }
-                        delete task;
+                        {
+                            std::lock_guard<std::mutex> lock(m_Lock);
+                            m_TimerInfoPool.push_back(task);
+                        }
                     });
                 }
             }
-            for(unsigned long i = 0 ; i < m_Timers ; i++)
-            {
-                delete m_MinHeap[i];
-            }
-            m_MinHeap.clear();
         });
     }
 
@@ -132,50 +121,73 @@ public:
     {
         m_Running = false;
         m_Thread.join();
+        for(unsigned long i = 0 ; i < m_ActiveTimerInfoList.size() ; i++)
+        {
+            delete m_ActiveTimerInfoList[i];
+        }
+        m_ActiveTimerInfoList.clear();
+        for(unsigned long i = 0 ; i < m_TimerInfoPool.size() ; i++)
+        {
+            delete m_TimerInfoPool[i];
+        }
+        m_TimerInfoPool.clear();
     }
 
-    TimerInfo* ScheduleTask(unsigned long milli, std::function <void()> to, std::function <void()> cancel, const std::string& label = "NoLabel")
+    TimerInfo* ScheduleTask(unsigned long milli, std::function <void()> to, std::function <void()> cancel)
     {
+        std::lock_guard<std::mutex> lock(m_Lock);
         TimerInfo* newone = nullptr;
-        unsigned long position = m_Timers;
-        if((m_MaxTimers == 0) || (m_Timers >= m_MaxTimers) || m_Running == false)
+        unsigned long position = m_ActiveTimerInfoList.size();
+        if(m_Running == false)
         {
             return nullptr;
         }
-        try
+        // 1. Get a free TimerInfo
+        if(m_TimerInfoPool.size() == 0)
         {
-            newone = new TimerInfo();
-            newone->m_Active = true;
-            newone->m_TargetTime = std::chrono::steady_clock::now() + std::chrono::milliseconds(milli);
-            newone->m_TimeoutHandler = to;
-            newone->m_CancelHandler = cancel;
-            newone->m_Label = label;
-        }
-        catch(const std::bad_alloc& ex)
-        {
-            std::cout<<ex.what()<<std::endl;
-            return nullptr;
-        }
-        {
-            std::unique_lock<std::mutex> lock(m_Lock);
-            m_MinHeap[position] = newone;
-            while(position)
+            try
             {
-                if(m_MinHeap[position]->m_TargetTime < m_MinHeap[position/2]->m_TargetTime)
-                {
-                    m_MinHeap[position] = m_MinHeap[position/2];
-                    m_MinHeap[position/2] = newone;
-                    position = position/2;
-                }
-                else
-                {
-                    break;
-                }
+                newone = new TimerInfo();
             }
-            m_Timers++;
-           m_Condition.notify_one();
+            catch(const std::bad_alloc& ex)
+            {
+                return nullptr;
+            }
+            try
+            {
+                m_TimerInfoPool.push_back(newone);
+            }
+            catch(const std::bad_alloc& ex)
+            {
+                delete newone;
+                return nullptr;
+            }
         }
-        std::cout<<m_Timers<<std::endl;
+        newone = m_TimerInfoPool.back();
+        m_TimerInfoPool.pop_back();
+
+        // 2. Setup TimerInfo
+        newone->m_Active = true;
+        newone->m_TargetTime = std::chrono::steady_clock::now() + std::chrono::milliseconds(milli);
+        newone->m_TimeoutHandler = to;
+        newone->m_CancelHandler = cancel;
+
+        // 3. Push TimerInfo into ActiveTimerList
+        m_ActiveTimerInfoList.push_back(newone);
+        while(position)
+        {
+            if(m_ActiveTimerInfoList[position]->m_TargetTime < m_ActiveTimerInfoList[position/2]->m_TargetTime)
+            {
+                m_ActiveTimerInfoList[position] = m_ActiveTimerInfoList[position/2];
+                m_ActiveTimerInfoList[position/2] = newone;
+                position = position/2;
+            }
+            else
+            {
+                break;
+            }
+        }
+        m_Condition.notify_one();
         return newone;
     }
 

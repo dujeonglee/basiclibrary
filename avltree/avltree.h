@@ -13,13 +13,10 @@
 
 #include <exception>
 #include <functional>
-#ifdef NONPRIMITIVE_KEY
 #include <string.h>
-#endif
 
-
-template <class KEY, class DATA> class avltreeelement;
-template <class KEY, class DATA> class avltree;
+template <class KEY, class DATA> class AVLTreeElement;
+template <class KEY, class DATA> class AVLTree;
 
 #ifdef NONPRIMITIVE_KEY
 template<class KEY>
@@ -43,117 +40,118 @@ void copy(KEY* const key1, const KEY* const key2){
 }
 #endif
 
-template <class KEY, class DATA> class avltreeelement{
+template <class KEY, class DATA> class AVLTreeElement
+{
 private:
-    DATA _data;
-    KEY _key;
-    avltreeelement<KEY, DATA>* _parent;
-    avltreeelement<KEY, DATA>* _left;
-    avltreeelement<KEY, DATA>* _right;
-    char _balance_factor;
-    avltree<KEY, DATA> _tree;
+    DATA m_Data;
+    KEY m_Key;
+    AVLTreeElement<KEY, DATA>* m_Parent;
+    AVLTreeElement<KEY, DATA>* m_Left;
+    AVLTreeElement<KEY, DATA>* m_Right;
+    char m_BalanceFactor;
+    AVLTree<KEY, DATA> m_Tree;
 
-    avltreeelement<KEY, DATA>(avltree<KEY, DATA>& t){
-        _parent = nullptr;
-        _left = nullptr;
-        _right = nullptr;
-        _balance_factor = 0;
-        _tree = t;
-        _tree._size++;
+    AVLTreeElement<KEY, DATA>(AVLTree<KEY, DATA>& t){
+        m_Parent = nullptr;
+        m_Left = nullptr;
+        m_Right = nullptr;
+        m_BalanceFactor = 0;
+        m_Tree = t;
+        m_Tree.m_Size++;
     }
 
-    ~avltreeelement<KEY, DATA>(){
-        avltreeelement<KEY, DATA>* adjustment_child;
-        avltreeelement<KEY, DATA>* adjustment_parent;
+    ~AVLTreeElement<KEY, DATA>(){
+        AVLTreeElement<KEY, DATA>* adjustment_child;
+        AVLTreeElement<KEY, DATA>* adjustment_parent;
 
-        if(_left == nullptr && _right == nullptr){
+        if(m_Left == nullptr && m_Right == nullptr){
             adjustment_child = this;
-            adjustment_parent = _parent;
-            if(_parent){
-                (_parent->_left == this?_parent->_left:_parent->_right) = nullptr;
+            adjustment_parent = m_Parent;
+            if(m_Parent){
+                (m_Parent->m_Left == this?m_Parent->m_Left:m_Parent->m_Right) = nullptr;
             }else{
-                _tree._root = nullptr;
+                m_Tree.m_Root = nullptr;
             }
         }else{
-            avltreeelement<KEY, DATA>* target;
+            AVLTreeElement<KEY, DATA>* target;
 #ifdef BALANCED_DELETION
-            if(_balance_factor > 0){
+            if(m_BalanceFactor > 0){
 #else
             if(1){
 #endif
-                target = (_left?_left:_right);
-                while((_left?target->_right:target->_left) != nullptr){
-                    target = (_left?target->_right:target->_left);
+                target = (m_Left?m_Left:m_Right);
+                while((m_Left?target->m_Right:target->m_Left) != nullptr){
+                    target = (m_Left?target->m_Right:target->m_Left);
                 }
             }else{
-                target = (_right?_right:_left);
-                while((_right?target->_left:target->_right) != nullptr){
-                    target = (_right?target->_left:target->_right);
+                target = (m_Right?m_Right:m_Left);
+                while((m_Right?target->m_Left:target->m_Right) != nullptr){
+                    target = (m_Right?target->m_Left:target->m_Right);
                 }
             }
-            target->_balance_factor = _balance_factor;
+            target->m_BalanceFactor = m_BalanceFactor;
 
-            if(target->_parent == this){
+            if(target->m_Parent == this){
                 adjustment_parent = target;
-                if(adjustment_parent->_left || adjustment_parent->_right){
-                    adjustment_child = (adjustment_parent->_left?adjustment_parent->_left:adjustment_parent->_right);
+                if(adjustment_parent->m_Left || adjustment_parent->m_Right){
+                    adjustment_child = (adjustment_parent->m_Left?adjustment_parent->m_Left:adjustment_parent->m_Right);
                 }else{
                     adjustment_child = nullptr;
-                    adjustment_parent->_balance_factor = _balance_factor + (adjustment_parent==_left?-1:1);
+                    adjustment_parent->m_BalanceFactor = m_BalanceFactor + (adjustment_parent==m_Left?-1:1);
                 }
-                if(_parent){
-                    (_parent->_left == this?_parent->_left:_parent->_right) = target;
+                if(m_Parent){
+                    (m_Parent->m_Left == this?m_Parent->m_Left:m_Parent->m_Right) = target;
                 }
-                target->_parent = _parent;
+                target->m_Parent = m_Parent;
 
 #ifdef BALANCED_DELETION
-                if(_balance_factor > 0){
+                if(m_BalanceFactor > 0){
 #else
                 if(1){
 #endif
-                    if((_left?_right:_left)){
-                        (_left?_right:_left)->_parent = target;
+                    if((m_Left?m_Right:m_Left)){
+                        (m_Left?m_Right:m_Left)->m_Parent = target;
                     }
-                    (_left?target->_right:target->_left) = (_left?_right:_left);
+                    (m_Left?target->m_Right:target->m_Left) = (m_Left?m_Right:m_Left);
                 }else{
-                    if((_right?_left:_right)){
-                        (_right?_left:_right)->_parent = target;
+                    if((m_Right?m_Left:m_Right)){
+                        (m_Right?m_Left:m_Right)->m_Parent = target;
                     }
-                    (_right?target->_left:target->_right) = (_right?_left:_right);
+                    (m_Right?target->m_Left:target->m_Right) = (m_Right?m_Left:m_Right);
                 }
             }else{
                 adjustment_child = target;
-                adjustment_parent = target->_parent;
+                adjustment_parent = target->m_Parent;
 #ifdef BALANCED_DELETION
-                if(_balance_factor > 0){
+                if(m_BalanceFactor > 0){
 #else
                 if(1){
 #endif
-                    (_left?target->_parent->_right:target->_parent->_left) = (_left?target->_left:target->_right);
-                    if((_left?target->_parent->_right:target->_parent->_left)){
-                        (_left?target->_parent->_right:target->_parent->_left)->_parent = target->_parent;
+                    (m_Left?target->m_Parent->m_Right:target->m_Parent->m_Left) = (m_Left?target->m_Left:target->m_Right);
+                    if((m_Left?target->m_Parent->m_Right:target->m_Parent->m_Left)){
+                        (m_Left?target->m_Parent->m_Right:target->m_Parent->m_Left)->m_Parent = target->m_Parent;
                     }
                 }else{
-                    (_right?target->_parent->_left:target->_parent->_right) = (_right?target->_right:target->_left);
-                    if((_right?target->_parent->_left:target->_parent->_right)){
-                        (_right?target->_parent->_left:target->_parent->_right)->_parent = target->_parent;
+                    (m_Right?target->m_Parent->m_Left:target->m_Parent->m_Right) = (m_Right?target->m_Right:target->m_Left);
+                    if((m_Right?target->m_Parent->m_Left:target->m_Parent->m_Right)){
+                        (m_Right?target->m_Parent->m_Left:target->m_Parent->m_Right)->m_Parent = target->m_Parent;
                     }
                 }
-                target->_parent = _parent;
-                if(target->_parent){
-                    (target->_parent->_left == this?target->_parent->_left:target->_parent->_right) = target;
+                target->m_Parent = m_Parent;
+                if(target->m_Parent){
+                    (target->m_Parent->m_Left == this?target->m_Parent->m_Left:target->m_Parent->m_Right) = target;
                 }
-                target->_left = _left;
-                if(target->_left){
-                    target->_left->_parent = target;
+                target->m_Left = m_Left;
+                if(target->m_Left){
+                    target->m_Left->m_Parent = target;
                 }
-                target->_right = _right;
-                if(target->_right){
-                    target->_right->_parent = target;
+                target->m_Right = m_Right;
+                if(target->m_Right){
+                    target->m_Right->m_Parent = target;
                 }
             }
-            if(this == _tree._root){
-                _tree._root = target;
+            if(this == m_Tree.m_Root){
+                m_Tree.m_Root = target;
             }
         }
         while(adjustment_parent != nullptr){
@@ -161,204 +159,212 @@ private:
 #ifdef NONPRIMITIVE_KEY
                 adjustment_parent->_balance_factor += (less<KEY>(adjustment_child->_key, adjustment_parent->_key)?-1:1);
 #else
-                adjustment_parent->_balance_factor += (adjustment_child->_key < adjustment_parent->_key?-1:1);
+                adjustment_parent->m_BalanceFactor += (adjustment_child->m_Key < adjustment_parent->m_Key?-1:1);
 #endif
             }
-            if( adjustment_parent->_balance_factor == 1 || adjustment_parent->_balance_factor == -1 ){
+            if( adjustment_parent->m_BalanceFactor == 1 || adjustment_parent->m_BalanceFactor == -1 ){
                 break;
             }
-            if(adjustment_parent->_balance_factor == 2 || adjustment_parent->_balance_factor == -2 ){
-                avltreeelement<KEY, DATA>* const grand_parent = adjustment_parent;
-                if(adjustment_parent->_balance_factor == 2){
-                    avltreeelement<KEY, DATA>* const parent = grand_parent->_left;
-                    if(parent->_balance_factor == 1 || parent->_balance_factor == 0){
-                        _tree._right_rotation(grand_parent, parent);
-                        if(parent->_balance_factor == 1){
-                            grand_parent->_balance_factor = 0;
-                            parent->_balance_factor = 0;
+            if(adjustment_parent->m_BalanceFactor == 2 || adjustment_parent->m_BalanceFactor == -2 ){
+                AVLTreeElement<KEY, DATA>* const grand_parent = adjustment_parent;
+                if(adjustment_parent->m_BalanceFactor == 2){
+                    AVLTreeElement<KEY, DATA>* const parent = grand_parent->m_Left;
+                    if(parent->m_BalanceFactor == 1 || parent->m_BalanceFactor == 0){
+                        m_Tree.RightRotation(grand_parent, parent);
+                        if(parent->m_BalanceFactor == 1){
+                            grand_parent->m_BalanceFactor = 0;
+                            parent->m_BalanceFactor = 0;
 
-                            adjustment_parent = parent->_parent;
+                            adjustment_parent = parent->m_Parent;
                             adjustment_child = parent;
                         }else{ // parent->_balance_factor == 0
-                            grand_parent->_balance_factor = 1;
-                            parent->_balance_factor = -1;
+                            grand_parent->m_BalanceFactor = 1;
+                            parent->m_BalanceFactor = -1;
                             break;
                         }
                     }else{ // adjustment_parent->_left && adjustment_parent->_left->_right
-                        avltreeelement<KEY, DATA>* const child = parent->_right;
+                        AVLTreeElement<KEY, DATA>* const child = parent->m_Right;
 
-                        _tree._left_rotation(parent, child);
-                        _tree._right_rotation(grand_parent, child);
-                        if(child->_balance_factor == 0){
-                            grand_parent->_balance_factor = 0;
-                            parent->_balance_factor = 0;
+                        m_Tree.LeftRotation(parent, child);
+                        m_Tree.RightRotation(grand_parent, child);
+                        if(child->m_BalanceFactor == 0){
+                            grand_parent->m_BalanceFactor = 0;
+                            parent->m_BalanceFactor = 0;
                         }else{
-                            if(child->_balance_factor == 1){
-                                grand_parent->_balance_factor = -1;
-                                parent->_balance_factor = 0;
-                                child->_balance_factor = 0;
+                            if(child->m_BalanceFactor == 1){
+                                grand_parent->m_BalanceFactor = -1;
+                                parent->m_BalanceFactor = 0;
+                                child->m_BalanceFactor = 0;
                             }else{ // child->_balance_factor == -1
-                                grand_parent->_balance_factor = 0;
-                                parent->_balance_factor = 1;
-                                child->_balance_factor = 0;
+                                grand_parent->m_BalanceFactor = 0;
+                                parent->m_BalanceFactor = 1;
+                                child->m_BalanceFactor = 0;
                             }
 
                         }
 
-                        adjustment_parent = child->_parent;
+                        adjustment_parent = child->m_Parent;
                         adjustment_child = child;
                     }
                 }else{ // adjustment_parent->_balance_factor == -2
-                    avltreeelement<KEY, DATA>* const parent = grand_parent->_right;
-                    if(parent->_balance_factor == -1|| parent->_balance_factor == 0){
-                        _tree._left_rotation(grand_parent, parent);
-                        if(parent->_balance_factor == -1){
-                            grand_parent->_balance_factor = 0;
-                            parent->_balance_factor = 0;
+                    AVLTreeElement<KEY, DATA>* const parent = grand_parent->m_Right;
+                    if(parent->m_BalanceFactor == -1|| parent->m_BalanceFactor == 0){
+                        m_Tree.LeftRotation(grand_parent, parent);
+                        if(parent->m_BalanceFactor == -1){
+                            grand_parent->m_BalanceFactor = 0;
+                            parent->m_BalanceFactor = 0;
 
-                            adjustment_parent = parent->_parent;
+                            adjustment_parent = parent->m_Parent;
                             adjustment_child = parent;
                         }else{ // parent->_balance_factor == 0
-                            grand_parent->_balance_factor = -1;
-                            parent->_balance_factor = 1;
+                            grand_parent->m_BalanceFactor = -1;
+                            parent->m_BalanceFactor = 1;
                             break;
                         }
                     }else{ // adjustment_parent->_right && adjustment_parent->_right->_left
-                        avltreeelement<KEY, DATA>* const child = parent->_left;
+                        AVLTreeElement<KEY, DATA>* const child = parent->m_Left;
 
-                        _tree._right_rotation(parent, child);
-                        _tree._left_rotation(grand_parent, child);
-                        if(child->_balance_factor == 0){
-                            grand_parent->_balance_factor = 0;
-                            parent->_balance_factor = 0;
+                        m_Tree.RightRotation(parent, child);
+                        m_Tree.LeftRotation(grand_parent, child);
+                        if(child->m_BalanceFactor == 0){
+                            grand_parent->m_BalanceFactor = 0;
+                            parent->m_BalanceFactor = 0;
                         }else{
-                            if(child->_balance_factor == 1){
-                                grand_parent->_balance_factor = 0;
-                                parent->_balance_factor = -1;
-                                child->_balance_factor = 0;
+                            if(child->m_BalanceFactor == 1){
+                                grand_parent->m_BalanceFactor = 0;
+                                parent->m_BalanceFactor = -1;
+                                child->m_BalanceFactor = 0;
                             }else{ // child->_balance_factor == -1
-                                grand_parent->_balance_factor = 1;
-                                parent->_balance_factor = 0;
-                                child->_balance_factor = 0;
+                                grand_parent->m_BalanceFactor = 1;
+                                parent->m_BalanceFactor = 0;
+                                child->m_BalanceFactor = 0;
                             }
                         }
-                        adjustment_parent = child->_parent;
+                        adjustment_parent = child->m_Parent;
                         adjustment_child = child;
                     }
                 }
             }else{
                 adjustment_child = adjustment_parent;
-                adjustment_parent = adjustment_parent->_parent;
+                adjustment_parent = adjustment_parent->m_Parent;
             }
         }
-        _tree._size--;
+        m_Tree.m_Size--;
     }
 public:
-    avltreeelement<KEY, DATA> &operator = (const avltreeelement<KEY, DATA> &other) {
+    AVLTreeElement<KEY, DATA> &operator = (const AVLTreeElement<KEY, DATA> &other) {
         if (this != &other) {
-            _data = other._data;
+            m_Data = other.m_Data;
         }
         return *this;
     }
 
-    friend class avltree<KEY, DATA>;
+    friend class AVLTree<KEY, DATA>;
 };
 
-template <class KEY, class DATA> class avltree {
-private:
-    avltreeelement<KEY, DATA>* _root;
-    unsigned int _size;
+template <class KEY, class DATA> class AVLTree {
+public:
+    enum TraversalMode
+    {
+        PREORDER,
+        INORDER,
+        POSTORDER
+    };
 
-    void _left_rotation(avltreeelement<KEY, DATA>* const parent, avltreeelement<KEY, DATA>* const child){
-        if(parent->_right != child){
+private:
+    AVLTreeElement<KEY, DATA>* m_Root;
+    unsigned int m_Size;
+
+    void LeftRotation(AVLTreeElement<KEY, DATA>* const parent, AVLTreeElement<KEY, DATA>* const child){
+        if(parent->m_Right != child){
             return;
         }
 
-        child->_parent = parent->_parent;
-        if(child->_parent){
-            (child->_parent->_left == parent?child->_parent->_left:child->_parent->_right) = child;
+        child->m_Parent = parent->m_Parent;
+        if(child->m_Parent){
+            (child->m_Parent->m_Left == parent?child->m_Parent->m_Left:child->m_Parent->m_Right) = child;
         }else{
-            _root = child;
+            m_Root = child;
         }
 
-        parent->_right = child->_left;
-        if(parent->_right){
-            parent->_right->_parent = parent;
+        parent->m_Right = child->m_Left;
+        if(parent->m_Right){
+            parent->m_Right->m_Parent = parent;
         }
 
-        child->_left = parent;
-        parent->_parent = child;
+        child->m_Left = parent;
+        parent->m_Parent = child;
     }
 
-    void _right_rotation(avltreeelement<KEY, DATA>* parent, avltreeelement<KEY, DATA>* child){
-        if(parent->_left != child){
+    void RightRotation(AVLTreeElement<KEY, DATA>* parent, AVLTreeElement<KEY, DATA>* child){
+        if(parent->m_Left != child){
             return;
         }
 
-        child->_parent = parent->_parent;
-        if(child->_parent){
-            (child->_parent->_left == parent?child->_parent->_left:child->_parent->_right) = child;
+        child->m_Parent = parent->m_Parent;
+        if(child->m_Parent){
+            (child->m_Parent->m_Left == parent?child->m_Parent->m_Left:child->m_Parent->m_Right) = child;
         }else{
-            _root = child;
+            m_Root = child;
         }
 
-        parent->_left = child->_right;
-        if(parent->_left){
-            parent->_left->_parent = parent;
+        parent->m_Left = child->m_Right;
+        if(parent->m_Left){
+            parent->m_Left->m_Parent = parent;
         }
 
-        child->_right = parent;
-        parent->_parent = child;
+        child->m_Right = parent;
+        parent->m_Parent = child;
     }
 
 public:
-    avltree<KEY, DATA>(){
-        _root = nullptr;
-        _size = 0;
+    AVLTree<KEY, DATA>(){
+        m_Root = nullptr;
+        m_Size = 0;
     }
-    ~avltree<KEY, DATA>(){
-        if(_size > 0){
-            clear();
+    ~AVLTree<KEY, DATA>(){
+        if(m_Size > 0){
+            Clear();
         }
     }
 
-    bool insert(const KEY& key, const DATA& data){
-        if(_root == nullptr){
+    bool Insert(const KEY& key, const DATA& data){
+        if(m_Root == nullptr){
             try{
-            _root = new avltreeelement<KEY, DATA>(*this);
+            m_Root = new AVLTreeElement<KEY, DATA>(*this);
             }catch(const std::bad_alloc& ex){
-                _root = nullptr;
+                m_Root = nullptr;
                 return false;
             }
 
 #ifdef NONPRIMITIVE_KEY
             copy<KEY>(&_root->_key, &key);
 #else
-            _root->_key = key;
+            m_Root->m_Key = key;
 #endif
-            _root->_data = data;
+            m_Root->m_Data = data;
         }else{
-            avltreeelement<KEY, DATA>* grand_parent = nullptr;
-            avltreeelement<KEY, DATA>* parent = _root;
-            avltreeelement<KEY, DATA>* child = nullptr;
+            AVLTreeElement<KEY, DATA>* grand_parent = nullptr;
+            AVLTreeElement<KEY, DATA>* parent = m_Root;
+            AVLTreeElement<KEY, DATA>* child = nullptr;
             while(
                   (
           #ifdef NONPRIMITIVE_KEY
                       (less<KEY>(key, parent->_key) && parent->_left == nullptr)
           #else
-                      (key < parent->_key && parent->_left == nullptr)
+                      (key < parent->m_Key && parent->m_Left == nullptr)
           #endif
                       ||
           #ifdef NONPRIMITIVE_KEY
                       (greater<KEY>(key, parent->_key) && parent->_right == nullptr)
           #else
-                      (key > parent->_key && parent->_right == nullptr)
+                      (key > parent->m_Key && parent->m_Right == nullptr)
           #endif
                       ||
           #ifdef NONPRIMITIVE_KEY
                       (equal<KEY>(key, parent->_key))
           #else
-                      key == parent->_key
+                      key == parent->m_Key
           #endif
                       )
                   ==
@@ -367,13 +373,13 @@ public:
 #ifdef NONPRIMITIVE_KEY
                 parent = (less<KEY>(key, parent->_key)?parent->_left:parent->_right);
 #else
-                parent = (key < parent->_key?parent->_left:parent->_right);
+                parent = (key < parent->m_Key?parent->m_Left:parent->m_Right);
 #endif
             }
 #ifdef NONPRIMITIVE_KEY
             if(equal<KEY>(key, parent->_key)){
 #else
-            if(key == parent->_key){
+            if(key == parent->m_Key){
 #endif
                 return false;
             }else{
@@ -381,80 +387,80 @@ public:
 #ifdef NONPRIMITIVE_KEY
                 child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(*this);
 #else
-                child = (key < parent->_key?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(*this);
+                child = (key < parent->m_Key?parent->m_Left:parent->m_Right) = new AVLTreeElement<KEY, DATA>(*this);
 #endif
                 }catch(const std::bad_alloc& ex){
 #ifdef NONPRIMITIVE_KEY
                       child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = nullptr;
 #else
-                      child = (key < parent->_key?parent->_left:parent->_right) = nullptr;
+                      child = (key < parent->m_Key?parent->m_Left:parent->m_Right) = nullptr;
 #endif
                       return false;
                 }
 #ifdef NONPRIMITIVE_KEY
                 copy<KEY>(&child->_key, &key);
 #else
-                child->_key = key;
+                child->m_Key = key;
 #endif
-                child->_data = data;
-                child->_parent = parent;
+                child->m_Data = data;
+                child->m_Parent = parent;
                 while(parent != nullptr){
-                    parent->_balance_factor += (parent->_left == child?1:-1);
-                    if(parent->_balance_factor == 2 || parent->_balance_factor == -2 || parent->_balance_factor == 0){
+                    parent->m_BalanceFactor += (parent->m_Left == child?1:-1);
+                    if(parent->m_BalanceFactor == 2 || parent->m_BalanceFactor == -2 || parent->m_BalanceFactor == 0){
                         break;
                     }
                     child = parent;
-                    parent = parent->_parent;
+                    parent = parent->m_Parent;
                 }
-                if(parent && parent->_balance_factor != 0){
+                if(parent && parent->m_BalanceFactor != 0){
                     grand_parent = parent;
-                    parent = (grand_parent->_balance_factor == 2?grand_parent->_left:grand_parent->_right);
-                    child = (parent->_balance_factor == 1?parent->_left:parent->_right);
-                    if(grand_parent->_left == parent && parent->_right == child){
-                        _left_rotation(parent, child);
-                        _right_rotation(grand_parent, child);
-                        if(child->_balance_factor == 0){
-                            grand_parent->_balance_factor = 0;
-                            parent->_balance_factor = 0;
+                    parent = (grand_parent->m_BalanceFactor == 2?grand_parent->m_Left:grand_parent->m_Right);
+                    child = (parent->m_BalanceFactor == 1?parent->m_Left:parent->m_Right);
+                    if(grand_parent->m_Left == parent && parent->m_Right == child){
+                        LeftRotation(parent, child);
+                        RightRotation(grand_parent, child);
+                        if(child->m_BalanceFactor == 0){
+                            grand_parent->m_BalanceFactor = 0;
+                            parent->m_BalanceFactor = 0;
                         }else{
-                            if(child->_balance_factor == 1){
-                                grand_parent->_balance_factor = -1;
-                                parent->_balance_factor = 0;
-                                child->_balance_factor = 0;
+                            if(child->m_BalanceFactor == 1){
+                                grand_parent->m_BalanceFactor = -1;
+                                parent->m_BalanceFactor = 0;
+                                child->m_BalanceFactor = 0;
                             }else{ // child->_balance_factor == -1
-                                grand_parent->_balance_factor = 0;
-                                parent->_balance_factor = 1;
-                                child->_balance_factor = 0;
+                                grand_parent->m_BalanceFactor = 0;
+                                parent->m_BalanceFactor = 1;
+                                child->m_BalanceFactor = 0;
                             }
                         }
                     }
-                    if(grand_parent->_left == parent && parent->_left == child){
-                        _right_rotation(grand_parent, parent);
-                        grand_parent->_balance_factor = 0;
-                        parent->_balance_factor = 0;
+                    if(grand_parent->m_Left == parent && parent->m_Left == child){
+                        RightRotation(grand_parent, parent);
+                        grand_parent->m_BalanceFactor = 0;
+                        parent->m_BalanceFactor = 0;
                     }
-                    if(grand_parent->_right == parent && parent->_left == child){
-                        _right_rotation(parent, child);
-                        _left_rotation(grand_parent, child);
-                        if(child->_balance_factor == 0){
-                            grand_parent->_balance_factor = 0;
-                            parent->_balance_factor = 0;
+                    if(grand_parent->m_Right == parent && parent->m_Left == child){
+                        RightRotation(parent, child);
+                        LeftRotation(grand_parent, child);
+                        if(child->m_BalanceFactor == 0){
+                            grand_parent->m_BalanceFactor = 0;
+                            parent->m_BalanceFactor = 0;
                         }else{
-                            if(child->_balance_factor == 1){
-                                grand_parent->_balance_factor = 0;
-                                parent->_balance_factor = -1;
-                                child->_balance_factor = 0;
+                            if(child->m_BalanceFactor == 1){
+                                grand_parent->m_BalanceFactor = 0;
+                                parent->m_BalanceFactor = -1;
+                                child->m_BalanceFactor = 0;
                             }else{ // child->_balance_factor == -1
-                                grand_parent->_balance_factor = 1;
-                                parent->_balance_factor = 0;
-                                child->_balance_factor = 0;
+                                grand_parent->m_BalanceFactor = 1;
+                                parent->m_BalanceFactor = 0;
+                                child->m_BalanceFactor = 0;
                             }
                         }
                     }
-                    if(grand_parent->_right == parent && parent->_right == child){
-                        _left_rotation(grand_parent, parent);
-                        grand_parent->_balance_factor = 0;
-                        parent->_balance_factor = 0;
+                    if(grand_parent->m_Right == parent && parent->m_Right == child){
+                        LeftRotation(grand_parent, parent);
+                        grand_parent->m_BalanceFactor = 0;
+                        parent->m_BalanceFactor = 0;
                     }
                 }
             }
@@ -462,21 +468,21 @@ public:
         return true;
     }
 
-    bool remove(const KEY& key){
-        if(_root == nullptr){
+    bool Remove(const KEY& key){
+        if(m_Root == nullptr){
             return false;
         }
-        avltreeelement<KEY, DATA>* target;
-        target = _root;
+        AVLTreeElement<KEY, DATA>* target;
+        target = m_Root;
 #ifdef NONPRIMITIVE_KEY
         while(!equal<KEY>(key, target->_key)){
 #else
-        while(key != target->_key){
+        while(key != target->m_Key){
 #endif
 #ifdef NONPRIMITIVE_KEY
             target = (less<KEY>(key, target->_key)?target->_left:target->_right);
 #else
-            target = (key < target->_key?target->_left:target->_right);
+            target = (key < target->m_Key?target->m_Left:target->m_Right);
 #endif
             if(target == nullptr){
                 return false;
@@ -486,36 +492,59 @@ public:
         return true;
     }
 
-    DATA* find(const KEY& key){
-        if(_root == nullptr){
-            return nullptr;
+    DATA& GetRef(const KEY& key){
+        if(m_Root == nullptr){
+            throw std::string("No such elements");
         }
-        avltreeelement<KEY, DATA>* target;
-        target = _root;
+        AVLTreeElement<KEY, DATA>* target;
+        target = m_Root;
 #ifdef NONPRIMITIVE_KEY
         while(!equal<KEY>(key, target->_key)){
 #else
-        while(key != target->_key){
+        while(key != target->m_Key){
 #endif
 #ifdef NONPRIMITIVE_KEY
             target = (less<KEY>(key, target->_key)?target->_left:target->_right);
 #else
-            target = (key < target->_key?target->_left:target->_right);
+            target = (key < target->m_Key?target->m_Left:target->m_Right);
+#endif
+            if(target == nullptr){
+                throw std::string("No such elements");
+            }
+        }
+        return target->m_Data;
+    }
+
+    DATA* GetPtr(const KEY& key){
+        if(m_Root == nullptr){
+            return nullptr;
+        }
+        AVLTreeElement<KEY, DATA>* target;
+        target = m_Root;
+#ifdef NONPRIMITIVE_KEY
+        while(!equal<KEY>(key, target->_key)){
+#else
+        while(key != target->m_Key){
+#endif
+#ifdef NONPRIMITIVE_KEY
+            target = (less<KEY>(key, target->_key)?target->_left:target->_right);
+#else
+            target = (key < target->m_Key?target->m_Left:target->m_Right);
 #endif
             if(target == nullptr){
                 return nullptr;
             }
         }
-        return (&target->_data);
+        return (&target->m_Data);
     }
 
-    unsigned int size(){
-        return _size;
+    unsigned int Size(){
+        return m_Size;
     }
 
-    void clear(){
-        while(_size){
-            delete _root;
+    void Clear(){
+        while(m_Size){
+            delete m_Root;
         }
     }
 
@@ -544,37 +573,34 @@ private:
     }
 #endif
 private:
-    void _perform_for_all_data(avltreeelement<KEY, DATA>* node, std::function <void (DATA&)> func){
-        func(node->_data);
-        if(node->_left){
-            _perform_for_all_data(node->_left, func);
+    void Traversal(AVLTreeElement<KEY, DATA>* node, std::function <void (DATA&)> func, TraversalMode mode){
+        if(mode==PREORDER)
+        {
+            func(node->m_Data);
         }
-        if(node->_right){
-            _perform_for_all_data(node->_right, func);
+        if(node->m_Left){
+            Traversal(node->m_Left, func, mode);
+        }
+        if(mode==INORDER)
+        {
+            func(node->m_Data);
+        }
+        if(node->m_Right){
+            Traversal(node->m_Right, func, mode);
+        }
+        if(mode==POSTORDER)
+        {
+            func(node->m_Data);
         }
     }
 
-    void _perform_for_all_key(avltreeelement<KEY, DATA>* node, std::function <void (KEY&)> func){
-        func(node->_key);
-        if(node->_left){
-            _perform_for_all_key(node->_left, func);
-        }
-        if(node->_right){
-            _perform_for_all_key(node->_right, func);
-        }
-    }
 public:
-    void perform_for_all_data(std::function <void (DATA&)> func){
-        if(_root){
-            _perform_for_all_data(_root, func);
+    void DoSomethingOnAllData(std::function <void (DATA&)> func, TraversalMode mode = INORDER){
+        if(m_Root){
+            Traversal(m_Root, func, mode);
         }
     }
-    void perform_for_all_key(std::function <void (KEY&)> func){
-        if(_root){
-            _perform_for_all_key(_root, func);
-        }
-    }
-    friend class avltreeelement<KEY, DATA>;
+    friend class AVLTreeElement<KEY, DATA>;
 };
 
 #endif

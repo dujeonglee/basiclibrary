@@ -13,14 +13,20 @@ public:
     std::function <void()> m_TimeoutHandler;
     std::function <void()> m_CancelHandler;
 };
+#ifdef TIMERINFOPOOLING
+template <unsigned long CONCURRENCY, unsigned long POOLLIMIT = 10>
+#else
 template <unsigned long CONCURRENCY>
+#endif
 class SingleShotTimer
 {
 private:
     std::mutex m_Lock;
     std::condition_variable m_Condition;
     std::vector<TimerInfo*> m_ActiveTimerInfoList;
+#ifdef TIMERINFOPOOLING
     std::vector<TimerInfo*> m_TimerInfoPool;
+#endif
     std::thread m_Thread;
     ThreadPool<1, CONCURRENCY> m_ThreadPool;
     std::atomic<bool> m_Running;
@@ -28,6 +34,11 @@ private:
 public:
     SingleShotTimer()
     {
+#ifdef TIMERINFOPOOLING
+        std::cout<<"TIMERINFOPOOLING ON"<<std::endl;
+#else
+        std::cout<<"TIMERINFOPOOLING OFF"<<std::endl;
+#endif
         m_Running = true;
         m_Thread = std::thread([this]()
         {
@@ -106,18 +117,48 @@ public:
                         continue;
                     }
                 }
-                if(task && task->m_Active)
+                if(task)
                 {
-                    m_ThreadPool.enqueue([this, task](){
-                        if(task->m_TimeoutHandler)
+                    if(task->m_Active)
+                    {
+                        m_ThreadPool.enqueue([this, task](){
+                            if(task->m_TimeoutHandler)
+                            {
+                                task->m_TimeoutHandler();
+                            }
+                            {
+#ifdef TIMERINFOPOOLING
+                                std::lock_guard<std::mutex> lock(m_Lock);
+                                if(m_TimerInfoPool.size() < POOLLIMIT)
+                                {
+                                    m_TimerInfoPool.push_back(task);
+                                }
+                                else
+                                {
+                                    delete task;
+                                }
+#else
+                                delete task;
+#endif
+                            }
+                        });
+                    }
+                    else
+                    {
+#ifdef TIMERINFOPOOLING
+                        std::lock_guard<std::mutex> lock(m_Lock);
+                        if(m_TimerInfoPool.size() < POOLLIMIT)
                         {
-                            task->m_TimeoutHandler();
-                        }
-                        {
-                            std::lock_guard<std::mutex> lock(m_Lock);
                             m_TimerInfoPool.push_back(task);
                         }
-                    });
+                        else
+                        {
+                            delete task;
+                        }
+#else
+                        delete task;
+#endif
+                    }
                 }
             }
         });
@@ -136,13 +177,14 @@ public:
             }
             m_ActiveTimerInfoList.clear();
         }
-
+#ifdef TIMERINFOPOOLING
         while(m_ThreadPool.tasks());
         for(unsigned long i = 0 ; i < m_TimerInfoPool.size() ; i++)
         {
             delete m_TimerInfoPool[i];
         }
         m_TimerInfoPool.clear();
+#endif
     }
 
     TimerInfo* ScheduleTask(unsigned long milli, std::function <void()> to, std::function <void()> cancel)
@@ -155,6 +197,7 @@ public:
             return nullptr;
         }
         // 1. Get a free TimerInfo
+#ifdef TIMERINFOPOOLING
         if(m_TimerInfoPool.size() == 0)
         {
             try
@@ -177,7 +220,16 @@ public:
         }
         newone = m_TimerInfoPool.back();
         m_TimerInfoPool.pop_back();
-
+#else
+        try
+        {
+            newone = new TimerInfo();
+        }
+        catch(const std::bad_alloc& ex)
+        {
+            return nullptr;
+        }
+#endif
         // 2. Setup TimerInfo
         newone->m_Active = true;
         newone->m_TargetTime = std::chrono::steady_clock::now() + std::chrono::milliseconds(milli);
@@ -212,6 +264,7 @@ public:
             {
                 timer->m_CancelHandler();
             }
+            /* timer will be deleted in m_Thread. */
         });
     }
 };

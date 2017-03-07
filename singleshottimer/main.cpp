@@ -17,7 +17,6 @@ int main()
         timer.ScheduleTask(3, []{std::cout<<"TO 3500\n";}, nullptr);
         timer.ScheduleTask(4, []{std::cout<<"TO 4500\n";}, nullptr);
         timer.ScheduleTask(5, []{std::cout<<"TO 5500\n";}, nullptr);
-        std::this_thread::sleep_for (std::chrono::milliseconds(1));
     }
     return 0;
 }

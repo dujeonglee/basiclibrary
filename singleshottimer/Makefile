@@ -15,7 +15,7 @@ $(TARGET) : $(OBJECTS)
 	$(CPP) -o $@  $^ -pg $(LIBRARY)
 
 .cpp.o : $(SOURCES)
-	$(CPP) $(SOURCES) $(CPPFLAGS) $(INCLUDES) $(LIBRARY)
+	$(CPP) $(SOURCES) $(CPPFLAGS) -DTIMERINFOPOOLING $(INCLUDES) $(LIBRARY)
 
 clean :
 	rm -rf $(OBJECTS) $(TARGET) *~ gmon.out *.bak

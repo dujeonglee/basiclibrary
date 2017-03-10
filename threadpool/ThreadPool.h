@@ -134,7 +134,7 @@ public:
         destroy();
     }
 
-    unsigned long resize(size_t size)
+    size_t resize(size_t size)
     {
         if(size == 0)
         {

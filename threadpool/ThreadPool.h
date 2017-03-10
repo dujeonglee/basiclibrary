@@ -134,11 +134,11 @@ public:
         destroy();
     }
 
-    void resize(size_t size)
+    unsigned long resize(size_t size)
     {
         if(size == 0)
         {
-            return;
+            return 0;
         }
         std::unique_lock<std::mutex> lock(_worker_queue_lock);
         if(size < _worker_queue.size())
@@ -164,6 +164,7 @@ public:
                 }
             }
         }
+        return _worker_queue.size();
     }
 
     void destroy()
@@ -176,13 +177,13 @@ public:
         }
     }
 
-    void enqueue(std::function<void()> task, const unsigned long priority = 0)
+    bool enqueue(std::function<void()> task, const unsigned long priority = 0)
     {
         {
             std::unique_lock<std::mutex> lock(_worker_queue_lock);
             if((_worker_queue.empty() == true) || (_worker_queue.front()->state() != WorkerThread::RUNNING))
             {
-                return;
+                return false;
             }
         }
         {
@@ -196,8 +197,10 @@ public:
             catch(std::bad_alloc& ex)
             {
                 std::cout<<ex.what()<<std::endl;
+                return false;
             }
         }
+        return true;
     }
 
     size_t tasks()

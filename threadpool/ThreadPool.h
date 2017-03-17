@@ -72,7 +72,11 @@ class ThreadPool
                         }
                     }
                     if(task != nullptr)
+                    {
+                        _pool->_active_workers++;
                         task();
+                        _pool->_active_workers--;
+                    }
                 }
             });
         }
@@ -98,9 +102,11 @@ private:
     std::mutex _worker_queue_lock;
 
     std::vector< std::queue < std::function<void()> > > _task_queue;
-    unsigned long _total_tasks;
+    size_t _total_tasks;
+    std::atomic< size_t > _active_workers;
     std::mutex _task_queue_lock;
     std::condition_variable _condition;
+
 public:
     ThreadPool()
     {
@@ -127,6 +133,7 @@ public:
         std::cout<<_worker_queue.size()<<" threads with ";
         std::cout<<_task_queue.size()<<" priorities\n";
         _total_tasks = 0;
+        _active_workers = 0;
     }
 
     ~ThreadPool()
@@ -217,6 +224,11 @@ public:
             return _task_queue[priority].size();
         }
         return 0;
+    }
+
+    size_t active_workers()
+    {
+        return _active_workers;
     }
 };
 

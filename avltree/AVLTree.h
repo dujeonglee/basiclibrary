@@ -157,7 +157,7 @@ private:
         while(adjustment_parent != nullptr){
             if(adjustment_child){
 #ifdef NONPRIMITIVE_KEY
-                adjustment_parent->_balance_factor += (less<KEY>(adjustment_child->_key, adjustment_parent->_key)?-1:1);
+                adjustment_parent->m_BalanceFactor += (less<KEY>(adjustment_child->m_Key, adjustment_parent->m_Key)?-1:1);
 #else
                 adjustment_parent->m_BalanceFactor += (adjustment_child->m_Key < adjustment_parent->m_Key?-1:1);
 #endif
@@ -177,12 +177,12 @@ private:
 
                             adjustment_parent = parent->m_Parent;
                             adjustment_child = parent;
-                        }else{ // parent->_balance_factor == 0
+                        }else{ // parent->m_BalanceFactor == 0
                             grand_parent->m_BalanceFactor = 1;
                             parent->m_BalanceFactor = -1;
                             break;
                         }
-                    }else{ // adjustment_parent->_left && adjustment_parent->_left->_right
+                    }else{ // adjustment_parent->m_Left && adjustment_parent->m_Left->m_Right
                         AVLTreeElement<KEY, DATA>* const child = parent->m_Right;
 
                         m_Tree.LeftRotation(parent, child);
@@ -195,7 +195,7 @@ private:
                                 grand_parent->m_BalanceFactor = -1;
                                 parent->m_BalanceFactor = 0;
                                 child->m_BalanceFactor = 0;
-                            }else{ // child->_balance_factor == -1
+                            }else{ // child->m_BalanceFactor == -1
                                 grand_parent->m_BalanceFactor = 0;
                                 parent->m_BalanceFactor = 1;
                                 child->m_BalanceFactor = 0;
@@ -206,7 +206,7 @@ private:
                         adjustment_parent = child->m_Parent;
                         adjustment_child = child;
                     }
-                }else{ // adjustment_parent->_balance_factor == -2
+                }else{ // adjustment_parent->m_BalanceFactor == -2
                     AVLTreeElement<KEY, DATA>* const parent = grand_parent->m_Right;
                     if(parent->m_BalanceFactor == -1|| parent->m_BalanceFactor == 0){
                         m_Tree.LeftRotation(grand_parent, parent);
@@ -216,12 +216,12 @@ private:
 
                             adjustment_parent = parent->m_Parent;
                             adjustment_child = parent;
-                        }else{ // parent->_balance_factor == 0
+                        }else{ // parent->m_BalanceFactor == 0
                             grand_parent->m_BalanceFactor = -1;
                             parent->m_BalanceFactor = 1;
                             break;
                         }
-                    }else{ // adjustment_parent->_right && adjustment_parent->_right->_left
+                    }else{ // adjustment_parent->m_Right && adjustment_parent->m_Right->m_Left
                         AVLTreeElement<KEY, DATA>* const child = parent->m_Left;
 
                         m_Tree.RightRotation(parent, child);
@@ -234,7 +234,7 @@ private:
                                 grand_parent->m_BalanceFactor = 0;
                                 parent->m_BalanceFactor = -1;
                                 child->m_BalanceFactor = 0;
-                            }else{ // child->_balance_factor == -1
+                            }else{ // child->m_BalanceFactor == -1
                                 grand_parent->m_BalanceFactor = 1;
                                 parent->m_BalanceFactor = 0;
                                 child->m_BalanceFactor = 0;
@@ -338,7 +338,7 @@ public:
             }
 
 #ifdef NONPRIMITIVE_KEY
-            copy<KEY>(&_root->_key, &key);
+            copy<KEY>(&m_Root->m_Key, &key);
 #else
             m_Root->m_Key = key;
 #endif
@@ -350,19 +350,19 @@ public:
             while(
                   (
           #ifdef NONPRIMITIVE_KEY
-                      (less<KEY>(key, parent->_key) && parent->_left == nullptr)
+                      (less<KEY>(key, parent->m_Key) && parent->m_Left == nullptr)
           #else
                       (key < parent->m_Key && parent->m_Left == nullptr)
           #endif
                       ||
           #ifdef NONPRIMITIVE_KEY
-                      (greater<KEY>(key, parent->_key) && parent->_right == nullptr)
+                      (greater<KEY>(key, parent->m_Key) && parent->m_Right == nullptr)
           #else
                       (key > parent->m_Key && parent->m_Right == nullptr)
           #endif
                       ||
           #ifdef NONPRIMITIVE_KEY
-                      (equal<KEY>(key, parent->_key))
+                      (equal<KEY>(key, parent->m_Key))
           #else
                       key == parent->m_Key
           #endif
@@ -371,13 +371,13 @@ public:
                   false
                   ){
 #ifdef NONPRIMITIVE_KEY
-                parent = (less<KEY>(key, parent->_key)?parent->_left:parent->_right);
+                parent = (less<KEY>(key, parent->m_Key)?parent->m_Left:parent->m_Right);
 #else
                 parent = (key < parent->m_Key?parent->m_Left:parent->m_Right);
 #endif
             }
 #ifdef NONPRIMITIVE_KEY
-            if(equal<KEY>(key, parent->_key)){
+            if(equal<KEY>(key, parent->m_Key)){
 #else
             if(key == parent->m_Key){
 #endif
@@ -385,20 +385,20 @@ public:
             }else{
                 try{
 #ifdef NONPRIMITIVE_KEY
-                child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = new avltreeelement<KEY, DATA>(*this);
+                child = (less<KEY>(key, parent->m_Key)?parent->m_Left:parent->m_Right) = new AVLTreeElement<KEY, DATA>(*this);
 #else
                 child = (key < parent->m_Key?parent->m_Left:parent->m_Right) = new AVLTreeElement<KEY, DATA>(*this);
 #endif
                 }catch(const std::bad_alloc& ex){
 #ifdef NONPRIMITIVE_KEY
-                      child = (less<KEY>(key, parent->_key)?parent->_left:parent->_right) = nullptr;
+                      child = (less<KEY>(key, parent->m_Key)?parent->m_Left:parent->m_Right) = nullptr;
 #else
                       child = (key < parent->m_Key?parent->m_Left:parent->m_Right) = nullptr;
 #endif
                       return false;
                 }
 #ifdef NONPRIMITIVE_KEY
-                copy<KEY>(&child->_key, &key);
+                copy<KEY>(&child->m_Key, &key);
 #else
                 child->m_Key = key;
 #endif
@@ -427,7 +427,7 @@ public:
                                 grand_parent->m_BalanceFactor = -1;
                                 parent->m_BalanceFactor = 0;
                                 child->m_BalanceFactor = 0;
-                            }else{ // child->_balance_factor == -1
+                            }else{ // child->m_BalanceFactor == -1
                                 grand_parent->m_BalanceFactor = 0;
                                 parent->m_BalanceFactor = 1;
                                 child->m_BalanceFactor = 0;
@@ -450,7 +450,7 @@ public:
                                 grand_parent->m_BalanceFactor = 0;
                                 parent->m_BalanceFactor = -1;
                                 child->m_BalanceFactor = 0;
-                            }else{ // child->_balance_factor == -1
+                            }else{ // child->m_BalanceFactor == -1
                                 grand_parent->m_BalanceFactor = 1;
                                 parent->m_BalanceFactor = 0;
                                 child->m_BalanceFactor = 0;
@@ -475,12 +475,12 @@ public:
         AVLTreeElement<KEY, DATA>* target;
         target = m_Root;
 #ifdef NONPRIMITIVE_KEY
-        while(!equal<KEY>(key, target->_key)){
+        while(!equal<KEY>(key, target->m_Key)){
 #else
         while(key != target->m_Key){
 #endif
 #ifdef NONPRIMITIVE_KEY
-            target = (less<KEY>(key, target->_key)?target->_left:target->_right);
+            target = (less<KEY>(key, target->m_Key)?target->m_Left:target->m_Right);
 #else
             target = (key < target->m_Key?target->m_Left:target->m_Right);
 #endif
@@ -499,12 +499,12 @@ public:
         AVLTreeElement<KEY, DATA>* target;
         target = m_Root;
 #ifdef NONPRIMITIVE_KEY
-        while(!equal<KEY>(key, target->_key)){
+        while(!equal<KEY>(key, target->m_Key)){
 #else
         while(key != target->m_Key){
 #endif
 #ifdef NONPRIMITIVE_KEY
-            target = (less<KEY>(key, target->_key)?target->_left:target->_right);
+            target = (less<KEY>(key, target->m_Key)?target->m_Left:target->m_Right);
 #else
             target = (key < target->m_Key?target->m_Left:target->m_Right);
 #endif
@@ -522,12 +522,12 @@ public:
         AVLTreeElement<KEY, DATA>* target;
         target = m_Root;
 #ifdef NONPRIMITIVE_KEY
-        while(!equal<KEY>(key, target->_key)){
+        while(!equal<KEY>(key, target->m_Key)){
 #else
         while(key != target->m_Key){
 #endif
 #ifdef NONPRIMITIVE_KEY
-            target = (less<KEY>(key, target->_key)?target->_left:target->_right);
+            target = (less<KEY>(key, target->m_Key)?target->m_Left:target->m_Right);
 #else
             target = (key < target->m_Key?target->m_Left:target->m_Right);
 #endif
@@ -553,20 +553,20 @@ public:
     void check_max_depth_and_validity(unsigned int* depth, bool* valid){
         (*depth) = 0;
         (*valid) = true;
-        if(_root){
-            (*depth) = _calculate_max_depth_and_balance_factor(_root, valid);
+        if(m_Root){
+            (*depth) = _calculate_max_depth_andm_BalanceFactor(m_Root, valid);
         }
     }
 
 private:
-    unsigned int _calculate_max_depth_and_balance_factor(avltreeelement<KEY, DATA>* node, bool* result){
+    unsigned int _calculate_max_depth_andm_BalanceFactor(avltreeelement<KEY, DATA>* node, bool* result){
         unsigned int left = 0;
         unsigned int right = 0;
-        if(node->_left){
-            left = _calculate_max_depth_and_balance_factor(node->_left, result);
+        if(node->m_Left){
+            left = _calculate_max_depth_andm_BalanceFactor(node->m_Left, result);
         }
-        if(node->_right){
-            right = _calculate_max_depth_and_balance_factor(node->_right, result);
+        if(node->m_Right){
+            right = _calculate_max_depth_andm_BalanceFactor(node->m_Right, result);
         }
         (*result) = (*result) && (left>right?left-right < 2:right-left < 2);
         return 1+(left>right?left:right);

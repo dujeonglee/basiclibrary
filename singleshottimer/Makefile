@@ -2,7 +2,7 @@
 .SUFFIXES : .cpp .o
 
 SOURCES  := $(wildcard *.cpp)
-INCLUDES := 
+INCLUDES := -I../threadpool/
 OBJECTS  := $(SOURCES:.cpp=.o)
 LIBRARY := -lpthread
 CPP := g++

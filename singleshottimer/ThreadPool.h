@@ -72,7 +72,11 @@ class ThreadPool
                         }
                     }
                     if(task != nullptr)
+                    {
+                        _pool->_active_workers++;
                         task();
+                        _pool->_active_workers--;
+                    }
                 }
             });
         }
@@ -98,9 +102,11 @@ private:
     std::mutex _worker_queue_lock;
 
     std::vector< std::queue < std::function<void()> > > _task_queue;
-    unsigned long _total_tasks;
+    size_t _total_tasks;
+    std::atomic< size_t > _active_workers;
     std::mutex _task_queue_lock;
     std::condition_variable _condition;
+
 public:
     ThreadPool()
     {
@@ -116,7 +122,7 @@ public:
         {
             try
             {
-                _worker_queue.emplace(new WorkerThread(this));
+                _worker_queue.emplace(std::unique_ptr< WorkerThread >(new WorkerThread(this)));
             }
             catch(const std::bad_alloc &ex)
             {
@@ -127,6 +133,7 @@ public:
         std::cout<<_worker_queue.size()<<" threads with ";
         std::cout<<_task_queue.size()<<" priorities\n";
         _total_tasks = 0;
+        _active_workers = 0;
     }
 
     ~ThreadPool()
@@ -134,11 +141,11 @@ public:
         destroy();
     }
 
-    void resize(size_t size)
+    size_t resize(size_t size)
     {
         if(size == 0)
         {
-            return;
+            return 0;
         }
         std::unique_lock<std::mutex> lock(_worker_queue_lock);
         if(size < _worker_queue.size())
@@ -155,7 +162,7 @@ public:
             {
                 try
                 {
-                    _worker_queue.emplace(new WorkerThread(this));
+                    _worker_queue.emplace(std::unique_ptr< WorkerThread >(new WorkerThread(this)));
                 }
                 catch(const std::bad_alloc &ex)
                 {
@@ -164,6 +171,7 @@ public:
                 }
             }
         }
+        return _worker_queue.size();
     }
 
     void destroy()
@@ -176,13 +184,13 @@ public:
         }
     }
 
-    void enqueue(std::function<void()> task, const unsigned long priority = 0)
+    bool enqueue(std::function<void()> task, const unsigned long priority = 0)
     {
         {
             std::unique_lock<std::mutex> lock(_worker_queue_lock);
             if((_worker_queue.empty() == true) || (_worker_queue.front()->state() != WorkerThread::RUNNING))
             {
-                return;
+                return false;
             }
         }
         {
@@ -196,8 +204,10 @@ public:
             catch(std::bad_alloc& ex)
             {
                 std::cout<<ex.what()<<std::endl;
+                return false;
             }
         }
+        return true;
     }
 
     size_t tasks()
@@ -214,6 +224,11 @@ public:
             return _task_queue[priority].size();
         }
         return 0;
+    }
+
+    size_t active_workers()
+    {
+        return _active_workers;
     }
 };
 

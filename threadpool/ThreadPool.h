@@ -162,7 +162,7 @@ public:
             {
                 try
                 {
-                    _worker_queue.emplace(new WorkerThread(this));
+                    _worker_queue.emplace(std::unique_ptr< WorkerThread >(new WorkerThread(this)));
                 }
                 catch(const std::bad_alloc &ex)
                 {

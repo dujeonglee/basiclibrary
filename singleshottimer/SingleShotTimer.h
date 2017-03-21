@@ -267,6 +267,22 @@ public:
             /* timer will be deleted in m_Thread. */
         });
     }
+
+    void CancelAll()
+    {
+        std::lock_guard<std::mutex> lock(m_Lock);
+        for(auto i = 0 ; i < m_ActiveTimerInfoList.size() ; i++)
+        {
+            TimerInfo* const timer = m_ActiveTimerInfoList[i];
+            timer->m_Active = false;
+            m_ThreadPool.enqueue([timer](){
+                if(timer->m_CancelHandler)
+                {
+                    timer->m_CancelHandler();
+                }
+            });
+        }
+    }
 };
 
 

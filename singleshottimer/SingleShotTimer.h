@@ -121,7 +121,7 @@ public:
                 {
                     if(task->m_Active)
                     {
-                        m_ThreadPool.enqueue([this, task](){
+                        m_ThreadPool.Enqueue([this, task](){
                             if(task->m_TimeoutHandler)
                             {
                                 task->m_TimeoutHandler();
@@ -178,7 +178,7 @@ public:
             m_ActiveTimerInfoList.clear();
         }
 #ifdef TIMERINFOPOOLING
-        while(m_ThreadPool.tasks());
+        while(m_ThreadPool.Tasks());
         for(unsigned long i = 0 ; i < m_TimerInfoPool.size() ; i++)
         {
             delete m_TimerInfoPool[i];
@@ -259,7 +259,7 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_Lock);
         timer->m_Active = false;
-        m_ThreadPool.enqueue([timer](){
+        m_ThreadPool.Enqueue([timer](){
             if(timer->m_CancelHandler)
             {
                 timer->m_CancelHandler();
@@ -275,7 +275,7 @@ public:
         {
             TimerInfo* const timer = m_ActiveTimerInfoList[i];
             timer->m_Active = false;
-            m_ThreadPool.enqueue([timer](){
+            m_ThreadPool.Enqueue([timer](){
                 if(timer->m_CancelHandler)
                 {
                     timer->m_CancelHandler();

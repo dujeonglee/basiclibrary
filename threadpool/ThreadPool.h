@@ -184,6 +184,12 @@ public:
         }
     }
 
+    void purgetasks()
+    {
+        std::unique_lock<std::mutex> lock(_task_queue_lock);
+        _task_queue.clear();
+    }
+
     bool enqueue(std::function<void()> task, const unsigned long priority = 0)
     {
         {

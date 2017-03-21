@@ -49,15 +49,15 @@ private:
     AVLTreeElement<KEY, DATA>* m_Left;
     AVLTreeElement<KEY, DATA>* m_Right;
     char m_BalanceFactor;
-    AVLTree<KEY, DATA> m_Tree;
+    AVLTree<KEY, DATA>* const m_Tree;
 
-    AVLTreeElement<KEY, DATA>(AVLTree<KEY, DATA>& t){
+    AVLTreeElement<KEY, DATA>(AVLTree<KEY, DATA>* t):m_Tree(t)
+    {
         m_Parent = nullptr;
         m_Left = nullptr;
         m_Right = nullptr;
         m_BalanceFactor = 0;
-        m_Tree = t;
-        m_Tree.m_Size++;
+        m_Tree->m_Size++;
     }
 
     ~AVLTreeElement<KEY, DATA>(){
@@ -70,7 +70,7 @@ private:
             if(m_Parent){
                 (m_Parent->m_Left == this?m_Parent->m_Left:m_Parent->m_Right) = nullptr;
             }else{
-                m_Tree.m_Root = nullptr;
+                m_Tree->m_Root = nullptr;
             }
         }else{
             AVLTreeElement<KEY, DATA>* target;
@@ -150,8 +150,8 @@ private:
                     target->m_Right->m_Parent = target;
                 }
             }
-            if(this == m_Tree.m_Root){
-                m_Tree.m_Root = target;
+            if(this == m_Tree->m_Root){
+                m_Tree->m_Root = target;
             }
         }
         while(adjustment_parent != nullptr){
@@ -170,7 +170,7 @@ private:
                 if(adjustment_parent->m_BalanceFactor == 2){
                     AVLTreeElement<KEY, DATA>* const parent = grand_parent->m_Left;
                     if(parent->m_BalanceFactor == 1 || parent->m_BalanceFactor == 0){
-                        m_Tree.RightRotation(grand_parent, parent);
+                        m_Tree->RightRotation(grand_parent, parent);
                         if(parent->m_BalanceFactor == 1){
                             grand_parent->m_BalanceFactor = 0;
                             parent->m_BalanceFactor = 0;
@@ -185,8 +185,8 @@ private:
                     }else{ // adjustment_parent->m_Left && adjustment_parent->m_Left->m_Right
                         AVLTreeElement<KEY, DATA>* const child = parent->m_Right;
 
-                        m_Tree.LeftRotation(parent, child);
-                        m_Tree.RightRotation(grand_parent, child);
+                        m_Tree->LeftRotation(parent, child);
+                        m_Tree->RightRotation(grand_parent, child);
                         if(child->m_BalanceFactor == 0){
                             grand_parent->m_BalanceFactor = 0;
                             parent->m_BalanceFactor = 0;
@@ -209,7 +209,7 @@ private:
                 }else{ // adjustment_parent->m_BalanceFactor == -2
                     AVLTreeElement<KEY, DATA>* const parent = grand_parent->m_Right;
                     if(parent->m_BalanceFactor == -1|| parent->m_BalanceFactor == 0){
-                        m_Tree.LeftRotation(grand_parent, parent);
+                        m_Tree->LeftRotation(grand_parent, parent);
                         if(parent->m_BalanceFactor == -1){
                             grand_parent->m_BalanceFactor = 0;
                             parent->m_BalanceFactor = 0;
@@ -224,8 +224,8 @@ private:
                     }else{ // adjustment_parent->m_Right && adjustment_parent->m_Right->m_Left
                         AVLTreeElement<KEY, DATA>* const child = parent->m_Left;
 
-                        m_Tree.RightRotation(parent, child);
-                        m_Tree.LeftRotation(grand_parent, child);
+                        m_Tree->RightRotation(parent, child);
+                        m_Tree->LeftRotation(grand_parent, child);
                         if(child->m_BalanceFactor == 0){
                             grand_parent->m_BalanceFactor = 0;
                             parent->m_BalanceFactor = 0;
@@ -249,7 +249,7 @@ private:
                 adjustment_parent = adjustment_parent->m_Parent;
             }
         }
-        m_Tree.m_Size--;
+        m_Tree->m_Size--;
     }
 public:
     AVLTreeElement<KEY, DATA> &operator = (const AVLTreeElement<KEY, DATA> &other) {
@@ -331,7 +331,7 @@ public:
     bool Insert(const KEY& key, const DATA& data){
         if(m_Root == nullptr){
             try{
-            m_Root = new AVLTreeElement<KEY, DATA>(*this);
+                m_Root = new AVLTreeElement<KEY, DATA>(this);
             }catch(const std::bad_alloc& ex){
                 m_Root = nullptr;
                 return false;
@@ -385,17 +385,17 @@ public:
             }else{
                 try{
 #ifdef NONPRIMITIVE_KEY
-                child = (less<KEY>(key, parent->m_Key)?parent->m_Left:parent->m_Right) = new AVLTreeElement<KEY, DATA>(*this);
+                    child = (less<KEY>(key, parent->m_Key)?parent->m_Left:parent->m_Right) = new AVLTreeElement<KEY, DATA>(this);
 #else
-                child = (key < parent->m_Key?parent->m_Left:parent->m_Right) = new AVLTreeElement<KEY, DATA>(*this);
+                    child = (key < parent->m_Key?parent->m_Left:parent->m_Right) = new AVLTreeElement<KEY, DATA>(this);
 #endif
                 }catch(const std::bad_alloc& ex){
 #ifdef NONPRIMITIVE_KEY
-                      child = (less<KEY>(key, parent->m_Key)?parent->m_Left:parent->m_Right) = nullptr;
+                    child = (less<KEY>(key, parent->m_Key)?parent->m_Left:parent->m_Right) = nullptr;
 #else
-                      child = (key < parent->m_Key?parent->m_Left:parent->m_Right) = nullptr;
+                    child = (key < parent->m_Key?parent->m_Left:parent->m_Right) = nullptr;
 #endif
-                      return false;
+                    return false;
                 }
 #ifdef NONPRIMITIVE_KEY
                 copy<KEY>(&child->m_Key, &key);

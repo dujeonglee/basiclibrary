@@ -4,7 +4,7 @@
 
 int main ()
 {
-    ThreadPool<3, 1>* pool = new ThreadPool<3, 1>();
+    ThreadPool<3, 3>* pool = new ThreadPool<3, 3>();
     std::thread StopStartThread = std::thread([pool](){
         while(1)
         {

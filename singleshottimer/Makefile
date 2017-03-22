@@ -7,7 +7,7 @@ OBJECTS  := $(SOURCES:.cpp=.o)
 LIBRARY := -lpthread
 CPP := g++
 #CPP := arm-linux-gnueabihf-g++
-TARGET = test
+TARGET = run
 
 all : debug
 

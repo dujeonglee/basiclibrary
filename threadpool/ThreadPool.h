@@ -43,37 +43,44 @@ class ThreadPool
     public:
         WorkerThread(ThreadPool* pool) : m_Pool(pool), m_State(STATE::RUNNING)
         {
-            m_Thread = new std::thread([this](){
-                for(;;)
-                {
-                    std::function<void()> task = nullptr;
+            try
+            {
+                m_Thread = new std::thread([this](){
+                    for(;;)
                     {
-                        std::unique_lock<std::mutex> lock(m_Pool->m_TaskQueueLock);
-                        while(!ShouldWakeup())
-                            m_Pool->m_Condition.wait(lock);
-                        if(this->m_State == STATE::DESTROY)
+                        std::function<void()> task = nullptr;
                         {
-                            return;
-                        }
-                        for(unsigned long priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
-                        {
-                            if(!m_Pool->m_TaskQueue[priority].empty())
+                            std::unique_lock<std::mutex> lock(m_Pool->m_TaskQueueLock);
+                            while(!ShouldWakeup())
+                                m_Pool->m_Condition.wait(lock);
+                            if(this->m_State == STATE::DESTROY)
                             {
-                                task = std::move(m_Pool->m_TaskQueue[priority].front());
-                                m_Pool->m_TaskQueue[priority].pop();
-                                break;
+                                return;
+                            }
+                            for(unsigned long priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
+                            {
+                                if(!m_Pool->m_TaskQueue[priority].empty())
+                                {
+                                    task = std::move(m_Pool->m_TaskQueue[priority].front());
+                                    m_Pool->m_TaskQueue[priority].pop();
+                                    break;
+                                }
                             }
                         }
+                        if(task != nullptr)
+                        {
+                            m_Pool->m_ActiveWorkers++;
+                            task();
+                            m_Pool->m_ActiveWorkers--;
+                            std::this_thread::sleep_for(std::chrono::milliseconds(0));
+                        }
                     }
-                    if(task != nullptr)
-                    {
-                        m_Pool->m_ActiveWorkers++;
-                        task();
-                        m_Pool->m_ActiveWorkers--;
-                        std::this_thread::sleep_for(std::chrono::milliseconds(0));
-                    }
-                }
-            });
+                });
+            }
+            catch(const std::bad_alloc& ex)
+            {
+                throw ex;
+            }
         }
 
         ~WorkerThread()
@@ -157,12 +164,9 @@ public:
 
     bool Enqueue(std::function<void()> task, const unsigned long priority = 0)
     {
+        if(m_State == STOPPED)
         {
-            std::unique_lock<std::mutex> lock(m_StateLock);
-            if(m_State == STOPPED)
-            {
-                return false;
-            }
+            return false;
         }
         {
             std::unique_lock<std::mutex> lock(m_TaskQueueLock);
@@ -212,68 +216,64 @@ public:
 
     void Start()
     {
+        std::unique_lock<std::mutex> lock(m_StateLock);
+        if(m_State == POOL_STATE::STARTED)
         {
-            std::unique_lock<std::mutex> lock(m_StateLock);
-            if(m_State == POOL_STATE::STARTED)
+            return;
+        }
+        m_State = POOL_STATE::STARTED;
+        {
+            std::unique_lock<std::mutex> lock(m_TaskQueueLock);
+            try
             {
-                return;
+                m_TaskQueue.resize((PRIORITY_LEVEL>1?PRIORITY_LEVEL:1));
             }
-            m_State = POOL_STATE::STARTED;
+            catch(std::bad_alloc& ex)
             {
-                std::unique_lock<std::mutex> lock(m_TaskQueueLock);
+                std::cout<<ex.what()<<std::endl;
+            }
+        }
+        {
+            std::unique_lock<std::mutex> lock(m_WorkerQueueLock);
+            for(unsigned int i = 0 ; i < (INITIAL_THREADS>1?INITIAL_THREADS:1) ; i++)
+            {
                 try
                 {
-                    m_TaskQueue.resize((PRIORITY_LEVEL>1?PRIORITY_LEVEL:1));
+                    m_WorkerQueue.emplace(std::unique_ptr< WorkerThread >(new WorkerThread(this)));
                 }
-                catch(std::bad_alloc& ex)
+                catch(const std::bad_alloc &ex)
                 {
                     std::cout<<ex.what()<<std::endl;
+                    break;
                 }
             }
-            {
-                std::unique_lock<std::mutex> lock(m_WorkerQueueLock);
-                for(unsigned int i = 0 ; i < (INITIAL_THREADS>1?INITIAL_THREADS:1) ; i++)
-                {
-                    try
-                    {
-                        m_WorkerQueue.emplace(std::unique_ptr< WorkerThread >(new WorkerThread(this)));
-                    }
-                    catch(const std::bad_alloc &ex)
-                    {
-                        std::cout<<ex.what()<<std::endl;
-                        break;
-                    }
-                }
-            }
-            std::cout<<"ThreadPool is started. ";
-            std::cout<<m_WorkerQueue.size()<<" threads and ";
-            std::cout<<m_TaskQueue.size()<<" priority levels\n";
-            m_ActiveWorkers = 0;
         }
+        std::cout<<"ThreadPool is started. ";
+        std::cout<<m_WorkerQueue.size()<<" threads and ";
+        std::cout<<m_TaskQueue.size()<<" priority levels\n";
+        m_ActiveWorkers = 0;
     }
 
     void Stop()
     {
+        std::unique_lock<std::mutex> lock(m_StateLock);
+        if(m_State == POOL_STATE::STOPPED)
         {
-            std::unique_lock<std::mutex> lock(m_StateLock);
-            if(m_State == POOL_STATE::STOPPED)
-            {
-                return;
-            }
-            m_State = POOL_STATE::STOPPED;
-            {
-                std::unique_lock<std::mutex> lock(m_WorkerQueueLock);
-                while(!m_WorkerQueue.empty())
-                {
-                    m_WorkerQueue.front()->state(WorkerThread::DESTROY);
-                    m_WorkerQueue.pop();
-                }
-            }
-            m_TaskQueue.clear();
-            std::cout<<"ThreadPool is stopped. ";
-            std::cout<<m_WorkerQueue.size()<<" threads and ";
-            std::cout<<Tasks()<<" tasks.\n";
+            return;
         }
+        m_State = POOL_STATE::STOPPED;
+        {
+            std::unique_lock<std::mutex> lock(m_WorkerQueueLock);
+            while(!m_WorkerQueue.empty())
+            {
+                m_WorkerQueue.front()->state(WorkerThread::DESTROY);
+                m_WorkerQueue.pop();
+            }
+        }
+        m_TaskQueue.clear();
+        std::cout<<"ThreadPool is stopped. ";
+        std::cout<<m_WorkerQueue.size()<<" threads and ";
+        std::cout<<Tasks()<<" tasks.\n";
     }
 };
 

@@ -4,29 +4,31 @@
 
 int main ()
 {
-    ThreadPool<2, 2> pool;
-    std::thread* prio0;
-    std::thread* prio1;
-    prio0 = new std::thread([&](){
+    ThreadPool<3, 1>* pool = new ThreadPool<3, 1>();
+    std::thread StopStartThread = std::thread([pool](){
         while(1)
         {
-            pool.Enqueue([&](){std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!PRI0\n";std::this_thread::sleep_for(std::chrono::seconds(1));}, 0);
-            std::this_thread::sleep_for(std::chrono::seconds(3));
+            pool->Stop();
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            pool->Start();
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     });
-    prio0->detach();
-    prio1 = new std::thread([&](){
+    StopStartThread.detach();
+    int a = 0;
+    int b = 0;
+    int c = 0;
+    std::thread EnqueueThread = std::thread([pool,&a,&b,&c](){
         while(1)
         {
-            if(pool.ActiveWorkers() == 0)
-                pool.Enqueue([&](){/*std::cout<<"PRI1\n";*/}, 1);
+            pool->Enqueue([&a](){a++;}, 0);
+            pool->Enqueue([&b](){b++;}, 1);
+            pool->Enqueue([&c](){c++;}, 2);
         }
     });
-    prio1->detach();
-    while(1)
-    {
-        std::cout<<"Active "<<pool.ActiveWorkers()<<std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
+    EnqueueThread.detach();
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    delete pool;
+    std::cout<<a<<":"<<b<<":"<<c<<std::endl;
     return 0;
 }

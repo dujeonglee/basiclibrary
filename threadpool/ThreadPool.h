@@ -80,6 +80,7 @@ class ThreadPool
         {
             m_Pool->m_Condition.notify_all();
             m_Thread->join();
+            delete m_Thread;
         }
 
         STATE state()

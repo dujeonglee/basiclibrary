@@ -95,6 +95,7 @@ public:
 
     void Start()
     {
+        std::cout<<"SingleShotTimer is started"<<std::endl;
         std::unique_lock<std::mutex> APILock(m_APILock);
         if(m_Running)
         {
@@ -232,6 +233,7 @@ public:
 
     void Stop()
     {
+        std::cout<<"SingleShotTimer is stopped"<<std::endl;
         std::unique_lock<std::mutex> APIlock(m_APILock);
         if(!m_Running)
         {

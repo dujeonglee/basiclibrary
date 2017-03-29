@@ -468,7 +468,7 @@ public:
         return true;
     }
 
-    bool Remove(const KEY& key){
+    bool Remove(const KEY& key, std::function <void (DATA&)> func = nullptr){
         if(m_Root == nullptr){
             return false;
         }
@@ -487,6 +487,10 @@ public:
             if(target == nullptr){
                 return false;
             }
+        }
+        if(func)
+        {
+            func(target->m_Data);
         }
         delete target;
         return true;

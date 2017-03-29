@@ -4,7 +4,7 @@
 
 int main()
 {
-    SingleShotTimer<1> timer;
+    SingleShotTimer<2, 1> timer;
 
     std::thread StartStop = std::thread([&timer](){
         while(1)
@@ -21,6 +21,7 @@ int main()
 
     while(1)
     {
+        /*
         timer.ScheduleTask(5, []{std::cout<<"TO 9\n";});
         timer.ScheduleTask(1, []{std::cout<<"TO 1\n";});
         timer.ScheduleTask(3, []{std::cout<<"TO 5\n";});
@@ -31,6 +32,9 @@ int main()
         timer.ScheduleTask(3, []{std::cout<<"TO 6\n";});
         timer.ScheduleTask(4, []{std::cout<<"TO 8\n";});
         timer.ScheduleTask(5, []{std::cout<<"TO 10\n";});
+        */
+        timer.ScheduleTask(1, []{std::cout<<"TO Priority 1\n";}, 1);
+        timer.ScheduleTask(1, []{std::cout<<"TO Priority 0\n";}, 0);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 

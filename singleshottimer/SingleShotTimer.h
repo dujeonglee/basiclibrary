@@ -11,13 +11,14 @@ class TimerInfo
 public:
     SSTTime m_TargetTime;
     std::function <void()> m_TimeoutHandler;
+    unsigned long m_Priority;
     void PrintTime()
     {
         std::time_t ttp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + (m_TargetTime - std::chrono::steady_clock::now()));
         std::cout << "time: " << std::ctime(&ttp);
     }
 };
-template <unsigned long CONCURRENCY>
+template <unsigned long PRIORITY, unsigned long CONCURRENCY>
 class SingleShotTimer
 {
 private:
@@ -27,7 +28,7 @@ private:
     std::condition_variable m_Condition;
     std::vector<TimerInfo*> m_ActiveTimerInfoList;
     std::thread* m_Thread;
-    ThreadPool<1, CONCURRENCY> m_ThreadPool;
+    ThreadPool<PRIORITY, CONCURRENCY> m_ThreadPool;
     std::atomic<bool> m_Running;
 
 public:
@@ -42,7 +43,7 @@ public:
         Stop();
     }
 
-    bool ScheduleTask(unsigned long milli, std::function <void()> to)
+    bool ScheduleTask(unsigned long milli, std::function <void()> to, unsigned long priority = 0)
     {
         std::lock_guard<std::mutex> APILock(m_APILock);
         if(m_Running == false)
@@ -64,6 +65,7 @@ public:
         // 2. Setup TimerInfo
         newone->m_TargetTime = std::chrono::steady_clock::now() + std::chrono::milliseconds(milli);
         newone->m_TimeoutHandler = to;
+        newone->m_Priority = priority;
 
         // 3. Push TimerInfo into ActiveTimerList, which is min heap.
         try
@@ -219,7 +221,7 @@ public:
                                 task->m_TimeoutHandler();
                             }
                             delete task;
-                        });
+                        }, task->m_Priority);
                     }
                 }
             });
@@ -256,6 +258,5 @@ public:
         std::cout<<"SingleShotTimer is stopped"<<std::endl;
     }
 };
-
 
 #endif

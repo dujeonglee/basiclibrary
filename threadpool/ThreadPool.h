@@ -88,7 +88,10 @@ class ThreadPool
         ~WorkerThread()
         {
             m_Pool->m_Condition.notify_all();
-            m_Thread->join();
+            if(m_Thread->joinable())
+            {
+                m_Thread->join();
+            }
             delete m_Thread;
         }
 

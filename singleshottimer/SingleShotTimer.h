@@ -257,6 +257,12 @@ public:
         }
         std::cout<<"SingleShotTimer is stopped"<<std::endl;
     }
+    
+    size_t Timers()
+    {
+        std::unique_lock<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
+        return m_ActiveTimerInfoList.size();
+    }
 };
 
 #endif

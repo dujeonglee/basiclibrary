@@ -4,7 +4,17 @@
 #include <chrono>
 #include <ctime>
 
-typedef std::chrono::time_point<std::chrono::steady_clock> SSTTime;
+#define GCC_VERSION (__GNUC__ * 10000 \
+                     + __GNUC_MINOR__ * 100 \
+                     + __GNUC_PATCHLEVEL__)
+
+#if GCC_VERSION >= 40800
+#define CLOCK std::chrono::steady_clock
+#else
+#define CLOCK std::chrono::monotonic_clock
+#endif
+
+typedef std::chrono::time_point<CLOCK> SSTTime;
 
 class TimerInfo
 {
@@ -14,7 +24,7 @@ public:
     unsigned long m_Priority;
     void PrintTime()
     {
-        std::time_t ttp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + (m_TargetTime - std::chrono::steady_clock::now()));
+        std::time_t ttp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + (m_TargetTime - CLOCK::now()));
         std::cout << "time: " << std::ctime(&ttp);
     }
 };
@@ -63,7 +73,7 @@ public:
             return false;
         }
         // 2. Setup TimerInfo
-        newone->m_TargetTime = std::chrono::steady_clock::now() + std::chrono::milliseconds(milli);
+        newone->m_TargetTime = CLOCK::now() + std::chrono::milliseconds(milli);
         newone->m_TimeoutHandler = to;
         newone->m_Priority = priority;
 
@@ -121,7 +131,7 @@ public:
                         {
                             return;
                         }
-                        if(m_ActiveTimerInfoList[0]->m_TargetTime <= std::chrono::steady_clock::now())
+                        if(m_ActiveTimerInfoList[0]->m_TargetTime <= CLOCK::now())
                         {
                             task = m_ActiveTimerInfoList[0];
                             m_ActiveTimerInfoList[0] = m_ActiveTimerInfoList.back();
@@ -172,9 +182,9 @@ public:
                                 return;
                             }
                         }
-                        while(m_ActiveTimerInfoList[0]->m_TargetTime > std::chrono::steady_clock::now() && m_Running)
+                        while(m_ActiveTimerInfoList[0]->m_TargetTime > CLOCK::now() && m_Running)
                         {
-                            m_Condition.wait_for(ActiveTimerInfoListLock, m_ActiveTimerInfoList[0]->m_TargetTime - std::chrono::steady_clock::now());
+                            m_Condition.wait_for(ActiveTimerInfoListLock, m_ActiveTimerInfoList[0]->m_TargetTime - CLOCK::now());
                         }
                         if(m_Running == false)
                         {
@@ -264,5 +274,5 @@ public:
         return m_ActiveTimerInfoList.size();
     }
 };
-
+#undef CLOCK
 #endif

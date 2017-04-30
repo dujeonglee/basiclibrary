@@ -9,9 +9,9 @@
                      + __GNUC_PATCHLEVEL__)
 
 #if GCC_VERSION >= 40800
-#define CLOCK std::chrono::steady_clock
+typedef std::chrono::steady_clock CLOCK;
 #else
-#define CLOCK std::chrono::monotonic_clock
+typedef std::chrono::monotonic_clock CLOCK;
 #endif
 
 typedef std::chrono::time_point<CLOCK> SSTTime;
@@ -274,5 +274,5 @@ public:
         return m_ActiveTimerInfoList.size();
     }
 };
-#undef CLOCK
+#undef GCC_VERSION
 #endif

@@ -48,7 +48,7 @@ private:
     AVLTreeElement<KEY, DATA>* m_Parent;
     AVLTreeElement<KEY, DATA>* m_Left;
     AVLTreeElement<KEY, DATA>* m_Right;
-    short m_BalanceFactor;
+    signed char m_BalanceFactor;
     AVLTree<KEY, DATA>* const m_Tree;
 
     AVLTreeElement<KEY, DATA>(AVLTree<KEY, DATA>* t):m_Tree(t)

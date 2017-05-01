@@ -115,28 +115,29 @@ public:
         m_Running = true;
         try
         {
-            m_Thread = new std::thread([this]()
+            SingleShotTimer* const self = this;
+            m_Thread = new std::thread([self]()
             {
-                while(m_Running)
+                while(self->m_Running)
                 {
                     TimerInfo* task = nullptr;
                     {
-                        std::unique_lock<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
+                        std::unique_lock<std::mutex> ActiveTimerInfoListLock(self->m_ActiveTimerInfoListLock);
 #ifdef BUSYWAITING
-                        while(m_ActiveTimerInfoList.size() == 0 && m_Running)
+                        while(self->m_ActiveTimerInfoList.size() == 0 && self->m_Running)
                         {
-                            m_Condition.wait(ActiveTimerInfoListLock);
+                            self->m_Condition.wait(ActiveTimerInfoListLock);
                         }
-                        if(m_Running == false)
+                        if(self->m_Running == false)
                         {
                             return;
                         }
-                        if(m_ActiveTimerInfoList[0]->m_TargetTime <= CLOCK::now())
+                        if(self->m_ActiveTimerInfoList[0]->m_TargetTime <= CLOCK::now())
                         {
-                            task = m_ActiveTimerInfoList[0];
-                            m_ActiveTimerInfoList[0] = m_ActiveTimerInfoList.back();
-                            m_ActiveTimerInfoList.pop_back();
-                            const unsigned long TIMERS = m_ActiveTimerInfoList.size();
+                            task = self->m_ActiveTimerInfoList[0];
+                            self->m_ActiveTimerInfoList[0] = self->m_ActiveTimerInfoList.back();
+                            self->m_ActiveTimerInfoList.pop_back();
+                            const unsigned long TIMERS = self->m_ActiveTimerInfoList.size();
                             // re-arrang heap
                             {
                                 unsigned long parent = 0;
@@ -145,10 +146,10 @@ public:
                                     const unsigned long leftchild = parent*2+1;
                                     const unsigned long rightchild = parent*2+2;
                                     unsigned long target = parent;
-                                    target = (leftchild < TIMERS && m_ActiveTimerInfoList[leftchild]->m_TargetTime < m_ActiveTimerInfoList[target]->m_TargetTime?
+                                    target = (leftchild < TIMERS && self->m_ActiveTimerInfoList[leftchild]->m_TargetTime < self->m_ActiveTimerInfoList[target]->m_TargetTime?
                                                   leftchild:
                                                   target);
-                                    target = (rightchild < TIMERS && m_ActiveTimerInfoList[rightchild]->m_TargetTime < m_ActiveTimerInfoList[target]->m_TargetTime?
+                                    target = (rightchild < TIMERS && self->m_ActiveTimerInfoList[rightchild]->m_TargetTime < self->m_ActiveTimerInfoList[target]->m_TargetTime?
                                                   rightchild:
                                                   target);
                                     if(parent == target)
@@ -157,9 +158,9 @@ public:
                                     }
                                     else
                                     {
-                                        TimerInfo* task = m_ActiveTimerInfoList[target];
-                                        m_ActiveTimerInfoList[target] = m_ActiveTimerInfoList[parent];
-                                        m_ActiveTimerInfoList[parent] = task;
+                                        TimerInfo* task = self->m_ActiveTimerInfoList[target];
+                                        self->m_ActiveTimerInfoList[target] = self->m_ActiveTimerInfoList[parent];
+                                        self->m_ActiveTimerInfoList[parent] = task;
                                         parent = target;
                                     }
                                 }
@@ -171,29 +172,29 @@ public:
                             continue;
                         }
 #else
-                        if(m_ActiveTimerInfoList.size() == 0)
+                        if(self->m_ActiveTimerInfoList.size() == 0)
                         {
-                            while(m_ActiveTimerInfoList.size() == 0 && m_Running)
+                            while(self->m_ActiveTimerInfoList.size() == 0 && self->m_Running)
                             {
-                                m_Condition.wait(ActiveTimerInfoListLock);
+                                self->m_Condition.wait(ActiveTimerInfoListLock);
                             }
-                            if(!m_Running)
+                            if(!self->m_Running)
                             {
                                 return;
                             }
                         }
-                        while(m_ActiveTimerInfoList[0]->m_TargetTime > CLOCK::now() && m_Running)
+                        while(self->m_ActiveTimerInfoList[0]->m_TargetTime > CLOCK::now() && self->m_Running)
                         {
-                            m_Condition.wait_for(ActiveTimerInfoListLock, m_ActiveTimerInfoList[0]->m_TargetTime - CLOCK::now());
+                            self->m_Condition.wait_for(ActiveTimerInfoListLock, self->m_ActiveTimerInfoList[0]->m_TargetTime - CLOCK::now());
                         }
-                        if(m_Running == false)
+                        if(self->m_Running == false)
                         {
                             return;
                         }
-                        task = m_ActiveTimerInfoList[0];
-                        m_ActiveTimerInfoList[0] = m_ActiveTimerInfoList.back();
-                        m_ActiveTimerInfoList.pop_back();
-                        const unsigned long TIMERS = m_ActiveTimerInfoList.size();
+                        task = self->m_ActiveTimerInfoList[0];
+                        self->m_ActiveTimerInfoList[0] = self->m_ActiveTimerInfoList.back();
+                        self->m_ActiveTimerInfoList.pop_back();
+                        const unsigned long TIMERS = self->m_ActiveTimerInfoList.size();
                         // re-arrang heap
                         {
                             unsigned long parent = 0;
@@ -202,10 +203,10 @@ public:
                                 const unsigned long leftchild = parent*2+1;
                                 const unsigned long rightchild = parent*2+2;
                                 unsigned long target = parent;
-                                target = (leftchild < TIMERS && m_ActiveTimerInfoList[leftchild]->m_TargetTime < m_ActiveTimerInfoList[target]->m_TargetTime?
+                                target = (leftchild < TIMERS && self->m_ActiveTimerInfoList[leftchild]->m_TargetTime < self->m_ActiveTimerInfoList[target]->m_TargetTime?
                                               leftchild:
                                               target);
-                                target = (rightchild < TIMERS && m_ActiveTimerInfoList[rightchild]->m_TargetTime < m_ActiveTimerInfoList[target]->m_TargetTime?
+                                target = (rightchild < TIMERS && self->m_ActiveTimerInfoList[rightchild]->m_TargetTime < self->m_ActiveTimerInfoList[target]->m_TargetTime?
                                               rightchild:
                                               target);
                                 if(parent == target)
@@ -214,9 +215,9 @@ public:
                                 }
                                 else
                                 {
-                                    TimerInfo* task = m_ActiveTimerInfoList[target];
-                                    m_ActiveTimerInfoList[target] = m_ActiveTimerInfoList[parent];
-                                    m_ActiveTimerInfoList[parent] = task;
+                                    TimerInfo* task = self->m_ActiveTimerInfoList[target];
+                                    self->m_ActiveTimerInfoList[target] = self->m_ActiveTimerInfoList[parent];
+                                    self->m_ActiveTimerInfoList[parent] = task;
                                     parent = target;
                                 }
                             }
@@ -225,7 +226,7 @@ public:
                     }
                     if(task)
                     {
-                        m_ThreadPool.Enqueue([this, task](){
+                        self->m_ThreadPool.Enqueue([task](){
                             if(task->m_TimeoutHandler)
                             {
                                 task->m_TimeoutHandler();

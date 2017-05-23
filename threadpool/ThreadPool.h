@@ -210,7 +210,7 @@ public:
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
             for(size_t i = 0 ; i < m_TaskQueue.size() ; i++)
             {
-                ret += m_TaskQueue.size();
+                ret += m_TaskQueue[i].size();
             }
         }
         return ret;

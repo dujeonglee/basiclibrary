@@ -40,41 +40,41 @@ class ThreadPool
             return false;
         }
 
-		void Run()
-		{
-			for(;;)
-			{
-				std::function<void()> task = nullptr;
-				{
-					std::unique_lock<std::mutex> TaskQueueLock(m_Pool->m_TaskQueueLock);
-					while(!ShouldWakeup())
-					{
-						m_Pool->m_Condition.wait(TaskQueueLock);
-					}
-					if(this->m_State == STATE::DESTROY)
-					{
-						return;
-					}
-					for(unsigned long priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
-					{
-						if(!m_Pool->m_TaskQueue[priority].empty())
-						{
-							task = std::move(m_Pool->m_TaskQueue[priority].front());
-							m_Pool->m_TaskQueue[priority].pop();
-							break;
-						}
-					}
-				}
-				if(task != nullptr)
-				{
-					m_Pool->m_ActiveWorkers++;
-					task();
-					m_Pool->m_ActiveWorkers--;
-					std::this_thread::sleep_for(std::chrono::milliseconds(0));
-				}
-			}
+        void Run()
+        {
+            for(;;)
+            {
+                std::function<void()> task = nullptr;
+                {
+                    std::unique_lock<std::mutex> TaskQueueLock(m_Pool->m_TaskQueueLock);
+                    while(!ShouldWakeup())
+                    {
+                        m_Pool->m_Condition.wait(TaskQueueLock);
+                    }
+                    if(this->m_State == STATE::DESTROY)
+                    {
+                        return;
+                    }
+                    for(unsigned long priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
+                    {
+                        if(!m_Pool->m_TaskQueue[priority].empty())
+                        {
+                            task = std::move(m_Pool->m_TaskQueue[priority].front());
+                            m_Pool->m_TaskQueue[priority].pop();
+                            break;
+                        }
+                    }
+                }
+                if(task != nullptr)
+                {
+                    m_Pool->m_ActiveWorkers++;
+                    task();
+                    m_Pool->m_ActiveWorkers--;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(0));
+                }
+            }
 
-		}
+        }
 
     public:
         WorkerThread(ThreadPool* pool) : m_Pool(pool), m_State(STATE::RUNNING)
@@ -300,3 +300,4 @@ public:
 };
 
 #endif
+

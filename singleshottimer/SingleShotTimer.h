@@ -4,6 +4,7 @@
 #include <chrono>
 #include <ctime>
 #include <algorithm>
+#define BUSYWAITING
 
 #define GCC_VERSION (__GNUC__ * 10000 \
                      + __GNUC_MINOR__ * 100 \
@@ -113,16 +114,19 @@ public:
                     TimerInfo* task = nullptr;
                     {
                         std::unique_lock<std::mutex> ActiveTimerInfoListLock(self->m_ActiveTimerInfoListLock);
-#ifdef BUSYWAITING
-                        while(self->m_ActiveTimerInfoList.size() == 0 && self->m_Running)
+                        if(self->m_ActiveTimerInfoList.size() == 0)
                         {
-                            self->m_Condition.wait(ActiveTimerInfoListLock);
+                            while(self->m_ActiveTimerInfoList.size() == 0 && self->m_Running)
+                            {
+                                self->m_Condition.wait(ActiveTimerInfoListLock);
+                            }
                         }
-                        if(self->m_Running == false)
+                        if(!self->m_Running)
                         {
                             return;
                         }
-                        if(self->m_ActiveTimerInfoList[0]->m_TargetTime <= CLOCK::now())
+#ifdef BUSYWAITING
+                        if(self->m_ActiveTimerInfoList[0]->m_TargetTime <= CLOCK::now() && self->m_Running)
                         {
                             std::pop_heap(self->m_ActiveTimerInfoList.begin(), self->m_ActiveTimerInfoList.end(), [](TimerInfo* &a, TimerInfo* &b)->bool{
                                 return a->m_TargetTime > b->m_TargetTime;
@@ -132,21 +136,14 @@ public:
                         }
                         else
                         {
-                            std::this_thread::sleep_for (std::chrono::seconds(0));
-                            continue;
-                        }
-#else
-                        if(self->m_ActiveTimerInfoList.size() == 0)
-                        {
-                            while(self->m_ActiveTimerInfoList.size() == 0 && self->m_Running)
-                            {
-                                self->m_Condition.wait(ActiveTimerInfoListLock);
-                            }
-                            if(!self->m_Running)
+                            if(self->m_Running == false)
                             {
                                 return;
                             }
+                            std::this_thread::sleep_for (std::chrono::microseconds(100));
+                            continue;
                         }
+#else
                         while(self->m_ActiveTimerInfoList[0]->m_TargetTime > CLOCK::now() && self->m_Running)
                         {
                             self->m_Condition.wait_for(ActiveTimerInfoListLock, self->m_ActiveTimerInfoList[0]->m_TargetTime - CLOCK::now());
@@ -215,4 +212,3 @@ public:
 };
 #undef GCC_VERSION
 #endif
-

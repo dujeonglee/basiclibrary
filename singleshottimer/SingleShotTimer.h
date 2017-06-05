@@ -3,6 +3,7 @@
 #include "ThreadPool.h"
 #include <chrono>
 #include <ctime>
+#include <algorithm>
 
 #define GCC_VERSION (__GNUC__ * 10000 \
                      + __GNUC_MINOR__ * 100 \
@@ -62,7 +63,6 @@ public:
         }
         std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
         TimerInfo* newone = nullptr;
-        unsigned long position = m_ActiveTimerInfoList.size();
         // 1. Get a free TimerInfo
         try
         {
@@ -88,19 +88,9 @@ public:
             delete newone;
             return false;
         }
-        while(position)
-        {
-            if(m_ActiveTimerInfoList[position]->m_TargetTime < m_ActiveTimerInfoList[position/2]->m_TargetTime)
-            {
-                m_ActiveTimerInfoList[position] = m_ActiveTimerInfoList[position/2];
-                m_ActiveTimerInfoList[position/2] = newone;
-                position = position/2;
-            }
-            else
-            {
-                break;
-            }
-        }
+        std::push_heap(m_ActiveTimerInfoList.begin(), m_ActiveTimerInfoList.end(), [](TimerInfo* &a, TimerInfo* &b)->bool{
+            return a->m_TargetTime > b->m_TargetTime;
+        });
         m_Condition.notify_one();
         return true;
     }
@@ -134,37 +124,11 @@ public:
                         }
                         if(self->m_ActiveTimerInfoList[0]->m_TargetTime <= CLOCK::now())
                         {
-                            task = self->m_ActiveTimerInfoList[0];
-                            self->m_ActiveTimerInfoList[0] = self->m_ActiveTimerInfoList.back();
+                            std::pop_heap(self->m_ActiveTimerInfoList.begin(), self->m_ActiveTimerInfoList.end(), [](TimerInfo* &a, TimerInfo* &b)->bool{
+                                return a->m_TargetTime > b->m_TargetTime;
+                            });
+                            task = self->m_ActiveTimerInfoList.back();
                             self->m_ActiveTimerInfoList.pop_back();
-                            const unsigned long TIMERS = self->m_ActiveTimerInfoList.size();
-                            // re-arrang heap
-                            {
-                                unsigned long parent = 0;
-                                while(parent < TIMERS)
-                                {
-                                    const unsigned long leftchild = parent*2+1;
-                                    const unsigned long rightchild = parent*2+2;
-                                    unsigned long target = parent;
-                                    target = (leftchild < TIMERS && self->m_ActiveTimerInfoList[leftchild]->m_TargetTime < self->m_ActiveTimerInfoList[target]->m_TargetTime?
-                                                  leftchild:
-                                                  target);
-                                    target = (rightchild < TIMERS && self->m_ActiveTimerInfoList[rightchild]->m_TargetTime < self->m_ActiveTimerInfoList[target]->m_TargetTime?
-                                                  rightchild:
-                                                  target);
-                                    if(parent == target)
-                                    {
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        TimerInfo* task = self->m_ActiveTimerInfoList[target];
-                                        self->m_ActiveTimerInfoList[target] = self->m_ActiveTimerInfoList[parent];
-                                        self->m_ActiveTimerInfoList[parent] = task;
-                                        parent = target;
-                                    }
-                                }
-                            }
                         }
                         else
                         {
@@ -191,37 +155,11 @@ public:
                         {
                             return;
                         }
-                        task = self->m_ActiveTimerInfoList[0];
-                        self->m_ActiveTimerInfoList[0] = self->m_ActiveTimerInfoList.back();
+                        std::pop_heap(self->m_ActiveTimerInfoList.begin(), self->m_ActiveTimerInfoList.end(), [](TimerInfo* &a, TimerInfo* &b)->bool{
+                            return a->m_TargetTime > b->m_TargetTime;
+                        });
+                        task = self->m_ActiveTimerInfoList.back();
                         self->m_ActiveTimerInfoList.pop_back();
-                        const unsigned long TIMERS = self->m_ActiveTimerInfoList.size();
-                        // re-arrang heap
-                        {
-                            unsigned long parent = 0;
-                            while(parent < TIMERS)
-                            {
-                                const unsigned long leftchild = parent*2+1;
-                                const unsigned long rightchild = parent*2+2;
-                                unsigned long target = parent;
-                                target = (leftchild < TIMERS && self->m_ActiveTimerInfoList[leftchild]->m_TargetTime < self->m_ActiveTimerInfoList[target]->m_TargetTime?
-                                              leftchild:
-                                              target);
-                                target = (rightchild < TIMERS && self->m_ActiveTimerInfoList[rightchild]->m_TargetTime < self->m_ActiveTimerInfoList[target]->m_TargetTime?
-                                              rightchild:
-                                              target);
-                                if(parent == target)
-                                {
-                                    break;
-                                }
-                                else
-                                {
-                                    TimerInfo* task = self->m_ActiveTimerInfoList[target];
-                                    self->m_ActiveTimerInfoList[target] = self->m_ActiveTimerInfoList[parent];
-                                    self->m_ActiveTimerInfoList[parent] = task;
-                                    parent = target;
-                                }
-                            }
-                        }
 #endif
                     }
                     if(task)
@@ -268,7 +206,7 @@ public:
         }
         std::cout<<"SingleShotTimer is stopped"<<std::endl;
     }
-    
+
     size_t Timers()
     {
         std::unique_lock<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
@@ -277,3 +215,4 @@ public:
 };
 #undef GCC_VERSION
 #endif
+

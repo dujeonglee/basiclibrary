@@ -106,6 +106,7 @@ public:
         m_Running = true;
         try
         {
+            m_ThreadPool.Start();
             SingleShotTimer* const self = this;
             m_Thread = new std::thread([self]()
             {
@@ -201,6 +202,7 @@ public:
             }
             m_ActiveTimerInfoList.clear();
         }
+        m_ThreadPool.Stop();
         std::cout<<"SingleShotTimer is stopped"<<std::endl;
     }
 

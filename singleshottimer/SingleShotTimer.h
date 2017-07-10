@@ -183,10 +183,10 @@ public:
                         self->m_ActiveTimerInfoList.pop_back();
 #endif
                     }
-                    if(task)
+                    if(task && task->m_Active)
                     {
                         self->m_ThreadPool.Enqueue([task](){
-                            if(task->m_Active && task->m_TimeoutHandler)
+                            if(task->m_TimeoutHandler)
                             {
                                 task->m_TimeoutHandler();
                             }

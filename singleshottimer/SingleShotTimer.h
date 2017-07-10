@@ -23,14 +23,16 @@ class TimerInfo
 public:
     SSTTime m_TargetTime;
     std::function <void()> m_TimeoutHandler;
-    unsigned long m_Priority;
+    uint32_t m_Priority;
+    uint32_t m_TimerID;
+    bool m_Active;
     void PrintTime()
     {
         std::time_t ttp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + (m_TargetTime - CLOCK::now()));
         std::cout << "time: " << std::ctime(&ttp);
     }
 };
-template <unsigned long PRIORITY, unsigned long CONCURRENCY>
+template <uint32_t PRIORITY, uint32_t CONCURRENCY>
 class SingleShotTimer
 {
 private:
@@ -42,11 +44,12 @@ private:
     std::thread* m_Thread;
     ThreadPool<PRIORITY, CONCURRENCY> m_ThreadPool;
     std::atomic<bool> m_Running;
-
+    uint32_t m_TimerID;
 public:
     SingleShotTimer()
     {
         m_Running = false;
+        m_TimerID = 0;
         Start();
     }
 
@@ -55,7 +58,7 @@ public:
         Stop();
     }
 
-    bool ScheduleTask(unsigned long milli, std::function <void()> to, unsigned long priority = 0)
+    uint32_t ScheduleTask(uint32_t milli, std::function <void()> to, uint32_t priority = 0)
     {
         std::lock_guard<std::mutex> APILock(m_APILock);
         if(m_Running == false)
@@ -77,6 +80,8 @@ public:
         newone->m_TargetTime = CLOCK::now() + std::chrono::milliseconds(milli);
         newone->m_TimeoutHandler = to;
         newone->m_Priority = priority;
+        const uint32_t TID = newone->m_TimerID = m_TimerID++;
+        newone->m_Active = true;
 
         // 3. Push TimerInfo into ActiveTimerList, which is min heap.
         try
@@ -93,7 +98,25 @@ public:
             return a->m_TargetTime > b->m_TargetTime;
         });
         m_Condition.notify_one();
-        return true;
+        return TID;
+    }
+
+    void CancelTask(const uint32_t timerid)
+    {
+        std::lock_guard<std::mutex> APILock(m_APILock);
+        if(m_Running == false)
+        {
+            return;
+        }
+        std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
+        for(uint32_t i = 0 ; i < m_ActiveTimerInfoList.size() ; i++)
+        {
+            if(m_ActiveTimerInfoList[i]->m_TimerID == timerid)
+            {
+                m_ActiveTimerInfoList[i]->m_Active = false;
+                return;
+            }
+        }
     }
 
     void Start()
@@ -163,7 +186,7 @@ public:
                     if(task)
                     {
                         self->m_ThreadPool.Enqueue([task](){
-                            if(task->m_TimeoutHandler)
+                            if(task->m_Active && task->m_TimeoutHandler)
                             {
                                 task->m_TimeoutHandler();
                             }
@@ -196,7 +219,7 @@ public:
         delete m_Thread;
         {
             std::unique_lock<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
-            for(unsigned long i = 0 ; i < m_ActiveTimerInfoList.size() ; i++)
+            for(uint32_t i = 0 ; i < m_ActiveTimerInfoList.size() ; i++)
             {
                 delete m_ActiveTimerInfoList[i];
             }

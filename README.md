@@ -2,9 +2,7 @@
 Implementation of basic data structures and libraries for own study.
 
 ## Header only data structures
-  - Linked List: Queue and Stack functions are provided.
-  - Binary Search Tree: Insert, find, remove functions are provided.
   - AVL Tree: Insert, find, remove functions are provided.
 ## Libraries
-  - SingleShotTimer: C++11 based timer library.
-  - ThreadPool: C++ based thread pool library.
+  - SingleShotTimer: C++11 based timer library. One can use this library for schduling task in future.
+  - ThreadPool: C++ based thread pool library. One can use this library to implement async message queue pattern.

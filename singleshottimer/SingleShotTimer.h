@@ -65,6 +65,10 @@ public:
         {
             return false;
         }
+        if(milli == 0)
+        {
+          return m_ThreadPool.Enqueue([to](){to();}, priority);
+        }
         std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
         TimerInfo* newone = nullptr;
         // 1. Get a free TimerInfo

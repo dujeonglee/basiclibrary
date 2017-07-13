@@ -50,7 +50,7 @@ public:
     SingleShotTimer()
     {
         m_Running = false;
-        m_TimerID = 0;
+        m_TimerID = INVALID_TIMER_ID+1;
         Start();
     }
 

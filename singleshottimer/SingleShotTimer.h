@@ -45,12 +45,14 @@ private:
     ThreadPool<PRIORITY, CONCURRENCY> m_ThreadPool;
     std::atomic<bool> m_Running;
     uint32_t m_TimerID;
-    const uint32_t INVALID_TIMER_ID = 0;
+    #define INVALID_TIMER_ID    ((uint32_t)0)
+    #define IMMEDIATE_TIMER_ID  ((uint32_t)1)
+    #define MINIMUM_TIMER_ID    ((uint32_t)2)
 public:
     SingleShotTimer()
     {
         m_Running = false;
-        m_TimerID = INVALID_TIMER_ID+1;
+        m_TimerID = MINIMUM_TIMER_ID;
         Start();
     }
 
@@ -58,18 +60,27 @@ public:
     {
         Stop();
     }
+    
+    uint32_t ImmediateTask(std::function <void()> to, uint32_t priority = 0)
+    {
+        return ScheduleTask(0, to, priority);
+    }
+    // alias ImmediateTask
+    uint32_t Enqueue(std::function <void()> to, uint32_t priority = 0)
+    {
+        return ScheduleTask(0, to, priority);
+    }
 
     uint32_t ScheduleTask(uint32_t milli, std::function <void()> to, uint32_t priority = 0)
     {
         std::lock_guard<std::mutex> APILock(m_APILock);
         if(m_Running == false)
         {
-            return false;
+            return INVALID_TIMER_ID;
         }
         if(milli == 0)
         {
-          m_ThreadPool.Enqueue([to](){to();}, priority);
-          return INVALID_TIMER_ID; /*One cannot cancel*/
+          return (m_ThreadPool.Enqueue([to](){to();}, priority)?IMMEDIATE_TIMER_ID:INVALID_TIMER_ID); /*One cannot cancel*/
         }
         std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
         TimerInfo* newone = nullptr;
@@ -80,16 +91,16 @@ public:
         }
         catch(const std::bad_alloc& ex)
         {
-            return false;
+            return INVALID_TIMER_ID;
         }
         // 2. Setup TimerInfo
         newone->m_TargetTime = CLOCK::now() + std::chrono::milliseconds(milli);
         newone->m_TimeoutHandler = to;
         newone->m_Priority = priority;
         const uint32_t TID = newone->m_TimerID = m_TimerID++;
-        if(INVALID_TIMER_ID == m_TimerID)
+        if(m_TimerID < MINIMUM_TIMER_ID )
         {
-            m_TimerID++;
+            m_TimerID = MINIMUM_TIMER_ID;
         }
         newone->m_Active = true;
 
@@ -102,7 +113,7 @@ public:
         {
             std::cout<<ex.what()<<std::endl;
             delete newone;
-            return false;
+            return INVALID_TIMER_ID;
         }
         std::push_heap(m_ActiveTimerInfoList.begin(), m_ActiveTimerInfoList.end(), [](TimerInfo* &a, TimerInfo* &b)->bool{
             return a->m_TargetTime > b->m_TargetTime;
@@ -115,6 +126,10 @@ public:
     {
         std::lock_guard<std::mutex> APILock(m_APILock);
         if(m_Running == false)
+        {
+            return;
+        }
+        if(timerid < MINIMUM_TIMER_ID)
         {
             return;
         }

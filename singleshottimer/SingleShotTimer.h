@@ -45,6 +45,7 @@ private:
     ThreadPool<PRIORITY, CONCURRENCY> m_ThreadPool;
     std::atomic<bool> m_Running;
     uint32_t m_TimerID;
+    const uint32_t INVALID_TIMER_ID = 0;
 public:
     SingleShotTimer()
     {
@@ -67,7 +68,8 @@ public:
         }
         if(milli == 0)
         {
-          return m_ThreadPool.Enqueue([to](){to();}, priority);
+          m_ThreadPool.Enqueue([to](){to();}, priority);
+          return INVALID_TIMER_ID; /*One cannot cancel*/
         }
         std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
         TimerInfo* newone = nullptr;
@@ -85,6 +87,10 @@ public:
         newone->m_TimeoutHandler = to;
         newone->m_Priority = priority;
         const uint32_t TID = newone->m_TimerID = m_TimerID++;
+        if(INVALID_TIMER_ID == m_TimerID)
+        {
+            m_TimerID++;
+        }
         newone->m_Active = true;
 
         // 3. Push TimerInfo into ActiveTimerList, which is min heap.

@@ -65,11 +65,6 @@ public:
     {
         return ScheduleTask(0, to, priority);
     }
-    // alias ImmediateTask
-    uint32_t Enqueue(std::function <void()> to, uint32_t priority = 0)
-    {
-        return ScheduleTask(0, to, priority);
-    }
 
     uint32_t ScheduleTask(uint32_t milli, std::function <void()> to, uint32_t priority = 0)
     {

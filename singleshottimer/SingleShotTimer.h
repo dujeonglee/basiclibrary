@@ -75,7 +75,7 @@ public:
         }
         if(milli == 0)
         {
-          return (m_ThreadPool.Enqueue([to](){to();}, priority)?IMMEDIATE_TIMER_ID:INVALID_TIMER_ID); /*One cannot cancel*/
+            return (m_ThreadPool.Enqueue([to](){to();}, priority)?IMMEDIATE_TIMER_ID:INVALID_TIMER_ID); /*One cannot cancel immediate task*/
         }
         std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
         TimerInfo* newone = nullptr;

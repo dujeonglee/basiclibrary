@@ -75,9 +75,10 @@ public:
         }
         if(milli == 0)
         {
-            return (m_ThreadPool.Enqueue([to](){to();}, priority)?IMMEDIATE_TIMER_ID:INVALID_TIMER_ID); /*One cannot cancel immediate task*/
+            return (m_ThreadPool.Enqueue([to](){to();}, priority) ? 
+                IMMEDIATE_TIMER_ID : 
+                INVALID_TIMER_ID); /*One cannot cancel immediate task*/
         }
-        std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
         TimerInfo* newone = nullptr;
         // 1. Get a free TimerInfo
         try
@@ -100,19 +101,22 @@ public:
         newone->m_Active = true;
 
         // 3. Push TimerInfo into ActiveTimerList, which is min heap.
-        try
         {
-            m_ActiveTimerInfoList.push_back(newone);
+            std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
+            try
+            {
+                m_ActiveTimerInfoList.push_back(newone);
+            }
+            catch(std::bad_alloc& ex)
+            {
+                std::cout<<ex.what()<<std::endl;
+                delete newone;
+                return INVALID_TIMER_ID;
+            }
+            std::push_heap(m_ActiveTimerInfoList.begin(), m_ActiveTimerInfoList.end(), [](TimerInfo* &a, TimerInfo* &b)->bool{
+                return a->m_TargetTime > b->m_TargetTime;
+            });
         }
-        catch(std::bad_alloc& ex)
-        {
-            std::cout<<ex.what()<<std::endl;
-            delete newone;
-            return INVALID_TIMER_ID;
-        }
-        std::push_heap(m_ActiveTimerInfoList.begin(), m_ActiveTimerInfoList.end(), [](TimerInfo* &a, TimerInfo* &b)->bool{
-            return a->m_TargetTime > b->m_TargetTime;
-        });
         m_Condition.notify_one();
         return TID;
     }

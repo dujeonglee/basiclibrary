@@ -258,6 +258,11 @@ public:
         std::unique_lock<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
         return m_ActiveTimerInfoList.size();
     }
+
+    bool Running()
+    {
+        return m_Running;
+    }
 };
 #undef GCC_VERSION
 #endif

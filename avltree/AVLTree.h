@@ -3,43 +3,303 @@
 
 /*
  * BALANCED_DELETION (Default = Enabled): Delete a node in consideration of balance factor to minimize number of rotations.
- * NONPRIMITIVE_KEY (Default = Disabled): Support a non-primitive type for key value.
  * DEBUG_FUNCTIONS (Default = Disabled): Support debugging functions
  */
 
 #define BALANCED_DELETION
-//#define NONPRIMITIVE_KEY
 //#define DEBUG_FUNCTIONS
 
 #include <exception>
 #include <functional>
+#include <string>
 #include <string.h>
+
+template<class KEY>
+inline bool less(const KEY& key1, const KEY& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return memcmp(&key1, &key2, sizeof(KEY))<0;
+}
+template<class KEY>
+inline bool greater(const KEY& key1, const KEY& key2){
+    return memcmp(&key1, &key2, sizeof(KEY))>0;
+}
+template<class KEY>
+inline bool equal(const KEY& key1, const KEY& key2){
+    return memcmp(&key1, &key2, sizeof(KEY))==0;
+}
+template<class KEY>
+inline void copy(KEY* const key1, const KEY* const key2){
+    memcpy(key1, key2, sizeof(KEY));
+}
+
+// For primitive type char
+template<>
+inline bool less<char>(const char& key1, const char& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<char>(const char& key1, const char& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<char>(const char& key1, const char& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<char>(char* const key1, const char* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type unsigned char
+template<>
+inline bool less<unsigned char>(const unsigned char& key1, const unsigned char& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<unsigned char>(const unsigned char& key1, const unsigned char& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<unsigned char>(const unsigned char& key1, const unsigned char& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<unsigned char>(unsigned char* const key1, const unsigned char* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type signed char
+template<>
+inline bool less<signed char>(const signed char& key1, const signed char& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<signed char>(const signed char& key1, const signed char& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<signed char>(const signed char& key1, const signed char& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<signed char>(signed char* const key1, const signed char* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type int
+template<>
+inline bool less<int>(const int& key1, const int& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<int>(const int& key1, const int& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<int>(const int& key1, const int& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<int>(int* const key1, const int* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type unsigned int
+template<>
+inline bool less<unsigned int>(const unsigned int& key1, const unsigned int& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<unsigned int>(const unsigned int& key1, const unsigned int& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<unsigned int>(const unsigned int& key1, const unsigned int& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<unsigned int>(unsigned int* const key1, const unsigned int* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type short int
+template<>
+inline bool less<short int>(const short int& key1, const short int& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<short int>(const short int& key1, const short int& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<short int>(const short int& key1, const short int& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<short int>(short int* const key1, const short int* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type unsigned short int
+template<>
+inline bool less<unsigned short int>(const unsigned short int& key1, const unsigned short int& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<unsigned short int>(const unsigned short int& key1, const unsigned short int& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<unsigned short int>(const unsigned short int& key1, const unsigned short int& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<unsigned short int>(unsigned short int* const key1, const unsigned short int* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type long int
+template<>
+inline bool less<long int>(const long int& key1, const long int& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<long int>(const long int& key1, const long int& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<long int>(const long int& key1, const long int& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<long int>(long int* const key1, const long int* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type unsigned long int
+template<>
+inline bool less<unsigned long int>(const unsigned long int& key1, const unsigned long int& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<unsigned long int>(const unsigned long int& key1, const unsigned long int& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<unsigned long int>(const unsigned long int& key1, const unsigned long int& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<unsigned long int>(unsigned long int* const key1, const unsigned long int* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type float
+template<>
+inline bool less<float>(const float& key1, const float& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<float>(const float& key1, const float& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<float>(const float& key1, const float& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<float>(float* const key1, const float* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type double
+template<>
+inline bool less<double>(const double& key1, const double& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<double>(const double& key1, const double& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<double>(const double& key1, const double& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<double>(double* const key1, const double* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type long double
+template<>
+inline bool less<long double>(const long double& key1, const long double& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<long double>(const long double& key1, const long double& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<long double>(const long double& key1, const long double& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<long double>(long double* const key1, const long double* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type wchar_t
+template<>
+inline bool less<wchar_t>(const wchar_t& key1, const wchar_t& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<wchar_t>(const wchar_t& key1, const wchar_t& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<wchar_t>(const wchar_t& key1, const wchar_t& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<wchar_t>(wchar_t* const key1, const wchar_t* const key2){
+    *key1 = *key2;
+}
+
+// For primitive type std::string
+template<>
+inline bool less<std::string>(const std::string& key1, const std::string& key2){
+    std::cout<<__FUNCTION__<<std::endl;
+    return key1 < key2;
+}
+template<>
+inline bool greater<std::string>(const std::string& key1, const std::string& key2){
+    return key1 > key2;
+}
+template<>
+inline bool equal<std::string>(const std::string& key1, const std::string& key2){
+    return key1 == key2;
+}
+template<>
+inline void copy<std::string>(std::string* const key1, const std::string* const key2){
+    *key1 = *key2;
+}
 
 template <class KEY, class DATA> class AVLTreeElement;
 template <class KEY, class DATA> class AVLTree;
-
-#ifdef NONPRIMITIVE_KEY
-template<class KEY>
-bool less(const KEY& key1, const KEY& key2){
-    return memcmp(&key1, &key2, sizeof(KEY))<0;
-}
-
-template<class KEY>
-bool greater(const KEY& key1, const KEY& key2){
-    return memcmp(&key1, &key2, sizeof(KEY))>0;
-}
-
-template<class KEY>
-bool equal(const KEY& key1, const KEY& key2){
-    return memcmp(&key1, &key2, sizeof(KEY))==0;
-}
-
-template<class KEY>
-void copy(KEY* const key1, const KEY* const key2){
-    memcpy(key1, key2, sizeof(KEY));
-}
-#endif
-
 template <class KEY, class DATA> class AVLTreeElement
 {
 private:
@@ -190,11 +450,7 @@ private:
         }
         while(adjustment_parent != nullptr){
             if(adjustment_child){
-#ifdef NONPRIMITIVE_KEY
                 adjustment_parent->m_BalanceFactor += (less<KEY>(adjustment_child->m_Key, adjustment_parent->m_Key)?-1:1);
-#else
-                adjustment_parent->m_BalanceFactor += (adjustment_child->m_Key < adjustment_parent->m_Key?-1:1);
-#endif
             }
             if( adjustment_parent->m_BalanceFactor == 1 || adjustment_parent->m_BalanceFactor == -1 ){
                 break;
@@ -378,12 +634,7 @@ public:
                 m_Tail = nullptr;
                 return false;
             }
-
-#ifdef NONPRIMITIVE_KEY
             copy<KEY>(&m_Root->m_Key, &key);
-#else
-            m_Root->m_Key = key;
-#endif
             m_Root->m_Data = data;
         }else{
             AVLTreeElement<KEY, DATA>* grand_parent = nullptr;
@@ -391,59 +642,27 @@ public:
             AVLTreeElement<KEY, DATA>* child = nullptr;
             while(
                   (
-          #ifdef NONPRIMITIVE_KEY
                       (less<KEY>(key, parent->m_Key) && parent->m_Left == nullptr)
-          #else
-                      (key < parent->m_Key && parent->m_Left == nullptr)
-          #endif
                       ||
-          #ifdef NONPRIMITIVE_KEY
                       (greater<KEY>(key, parent->m_Key) && parent->m_Right == nullptr)
-          #else
-                      (key > parent->m_Key && parent->m_Right == nullptr)
-          #endif
                       ||
-          #ifdef NONPRIMITIVE_KEY
                       (equal<KEY>(key, parent->m_Key))
-          #else
-                      key == parent->m_Key
-          #endif
                       )
                   ==
                   false
                   ){
-#ifdef NONPRIMITIVE_KEY
                 parent = (less<KEY>(key, parent->m_Key)?parent->m_Left:parent->m_Right);
-#else
-                parent = (key < parent->m_Key?parent->m_Left:parent->m_Right);
-#endif
             }
-#ifdef NONPRIMITIVE_KEY
             if(equal<KEY>(key, parent->m_Key)){
-#else
-            if(key == parent->m_Key){
-#endif
                 return false;
             }else{
                 try{
-#ifdef NONPRIMITIVE_KEY
                     child = (less<KEY>(key, parent->m_Key)?parent->m_Left:parent->m_Right) = new AVLTreeElement<KEY, DATA>(this);
-#else
-                    child = (key < parent->m_Key?parent->m_Left:parent->m_Right) = new AVLTreeElement<KEY, DATA>(this);
-#endif
                 }catch(const std::bad_alloc& ex){
-#ifdef NONPRIMITIVE_KEY
                     child = (less<KEY>(key, parent->m_Key)?parent->m_Left:parent->m_Right) = nullptr;
-#else
-                    child = (key < parent->m_Key?parent->m_Left:parent->m_Right) = nullptr;
-#endif
                     return false;
                 }
-#ifdef NONPRIMITIVE_KEY
                 copy<KEY>(&child->m_Key, &key);
-#else
-                child->m_Key = key;
-#endif
                 child->m_Data = data;
                 child->m_Parent = parent;
                 while(parent != nullptr){
@@ -516,16 +735,8 @@ public:
         }
         AVLTreeElement<KEY, DATA>* target;
         target = m_Root;
-#ifdef NONPRIMITIVE_KEY
         while(!equal<KEY>(key, target->m_Key)){
-#else
-        while(key != target->m_Key){
-#endif
-#ifdef NONPRIMITIVE_KEY
             target = (less<KEY>(key, target->m_Key)?target->m_Left:target->m_Right);
-#else
-            target = (key < target->m_Key?target->m_Left:target->m_Right);
-#endif
             if(target == nullptr){
                 return false;
             }
@@ -544,16 +755,8 @@ public:
         }
         AVLTreeElement<KEY, DATA>* target;
         target = m_Root;
-#ifdef NONPRIMITIVE_KEY
         while(!equal<KEY>(key, target->m_Key)){
-#else
-        while(key != target->m_Key){
-#endif
-#ifdef NONPRIMITIVE_KEY
             target = (less<KEY>(key, target->m_Key)?target->m_Left:target->m_Right);
-#else
-            target = (key < target->m_Key?target->m_Left:target->m_Right);
-#endif
             if(target == nullptr){
                 throw std::string("No such elements");
             }
@@ -567,16 +770,8 @@ public:
         }
         AVLTreeElement<KEY, DATA>* target;
         target = m_Root;
-#ifdef NONPRIMITIVE_KEY
         while(!equal<KEY>(key, target->m_Key)){
-#else
-        while(key != target->m_Key){
-#endif
-#ifdef NONPRIMITIVE_KEY
             target = (less<KEY>(key, target->m_Key)?target->m_Left:target->m_Right);
-#else
-            target = (key < target->m_Key?target->m_Left:target->m_Right);
-#endif
             if(target == nullptr){
                 return nullptr;
             }

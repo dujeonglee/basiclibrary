@@ -2,12 +2,12 @@
 #define _AVLTREE_H_
 
 /*
- * BALANCED_DELETION (Default = Enabled): Delete a node in consideration of balance factor to minimize number of rotations.
- * DEBUG_FUNCTIONS (Default = Disabled): Support debugging functions
+ * BALANCED_DELETION : Delete a node in consideration of balance factor to minimize number of rotations.
+ * DEBUG_FUNCTIONS : For debugging purpose
  */
 
 #define BALANCED_DELETION
-//#define DEBUG_FUNCTIONS
+#define DEBUG_FUNCTIONS
 
 #include <exception>
 #include <functional>
@@ -776,25 +776,27 @@ public:
 
 #ifdef DEBUG_FUNCTIONS
 public:
-    void check_max_depth_and_validity(unsigned int* depth, bool* valid){
-        (*depth) = 0;
-        (*valid) = true;
+    void CheckTreeStructure(unsigned int& depth, bool& valid){
+        depth = 0;
+        valid = true;
         if(m_Root){
-            (*depth) = _calculate_max_depth_andm_BalanceFactor(m_Root, valid);
+            depth = CheckSubTreeStructure(m_Root, valid);
         }
     }
 
 private:
-    unsigned int _calculate_max_depth_andm_BalanceFactor(avltreeelement<KEY, DATA>* node, bool* result){
+    unsigned int CheckSubTreeStructure(AVLTreeElement<KEY, DATA>* node, bool& result){
         unsigned int left = 0;
         unsigned int right = 0;
+        bool left_result = true;
+        bool right_result = true;
         if(node->m_Left){
-            left = _calculate_max_depth_andm_BalanceFactor(node->m_Left, result);
+            left = CheckSubTreeStructure(node->m_Left, left_result);
         }
         if(node->m_Right){
-            right = _calculate_max_depth_andm_BalanceFactor(node->m_Right, result);
+            right = CheckSubTreeStructure(node->m_Right, right_result);
         }
-        (*result) = (*result) && (left>right?left-right < 2:right-left < 2);
+        result = left_result && right_result && (left>right?left-right < 2:right-left < 2);
         return 1+(left>right?left:right);
     }
 #endif

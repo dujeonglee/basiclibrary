@@ -48,6 +48,8 @@ private:
     AVLTreeElement<KEY, DATA>* m_Parent;
     AVLTreeElement<KEY, DATA>* m_Left;
     AVLTreeElement<KEY, DATA>* m_Right;
+    AVLTreeElement<KEY, DATA>* m_Prev;
+    AVLTreeElement<KEY, DATA>* m_Next;
     signed char m_BalanceFactor;
     AVLTree<KEY, DATA>* const m_Tree;
 
@@ -56,6 +58,18 @@ private:
         m_Parent = nullptr;
         m_Left = nullptr;
         m_Right = nullptr;
+        if(m_Tree->m_Head == nullptr)
+        {
+            m_Tree->m_Head = this;
+            m_Tree->m_Tail = this;
+        }
+        else
+        {
+            m_Prev = m_Tree->m_Tail;
+            m_Prev->m_Next = this;
+            m_Next = nullptr;
+            m_Tree->m_Tail = this;
+        }
         m_BalanceFactor = 0;
         m_Tree->m_Size++;
     }
@@ -64,6 +78,26 @@ private:
         AVLTreeElement<KEY, DATA>* adjustment_child;
         AVLTreeElement<KEY, DATA>* adjustment_parent;
 
+        if(this == m_Tree->m_Head && this == m_Tree->m_Tail)
+        {
+            m_Tree->m_Head = nullptr;
+            m_Tree->m_Tail = nullptr;
+        }
+        else if(this == m_Tree->m_Head)
+        {
+            m_Tree->m_Head = m_Next;
+            m_Tree->m_Head->m_Prev = nullptr;
+        }
+        else if(this == m_Tree->m_Tail)
+        {
+            m_Tree->m_Tail = m_Prev;
+            m_Tree->m_Tail->m_Next = nullptr;
+        }
+        else
+        {
+            m_Prev->m_Next = m_Next;
+            m_Next->m_Prev = m_Prev;
+        }
         if(m_Left == nullptr && m_Right == nullptr){
             adjustment_child = this;
             adjustment_parent = m_Parent;
@@ -273,6 +307,9 @@ public:
 
 private:
     AVLTreeElement<KEY, DATA>* m_Root;
+    AVLTreeElement<KEY, DATA>* m_Head;
+    AVLTreeElement<KEY, DATA>* m_Tail;
+    AVLTreeElement<KEY, DATA>* m_Iter;
     unsigned int m_Size;
 
     void LeftRotation(AVLTreeElement<KEY, DATA>* const parent, AVLTreeElement<KEY, DATA>* const child){
@@ -320,6 +357,8 @@ private:
 public:
     AVLTree<KEY, DATA>(){
         m_Root = nullptr;
+        m_Head = nullptr;
+        m_Tail = nullptr;
         m_Size = 0;
     }
     ~AVLTree<KEY, DATA>(){
@@ -334,6 +373,8 @@ public:
                 m_Root = new AVLTreeElement<KEY, DATA>(this);
             }catch(const std::bad_alloc& ex){
                 m_Root = nullptr;
+                m_Head = nullptr;
+                m_Tail = nullptr;
                 return false;
             }
 
@@ -602,6 +643,39 @@ public:
     void DoSomethingOnAllData(std::function <void (DATA&)> func, TraversalMode mode = INORDER){
         if(m_Root){
             Traversal(m_Root, func, mode);
+        }
+    }
+
+    void InitIteration()
+    {
+        m_Iter = m_Head;
+    }
+    
+    bool GetNextElement(DATA& data)
+    {
+        if(m_Iter == nullptr)
+        {
+            return false;
+        }
+        else
+        {
+            data = m_Iter->m_Data;
+            m_Iter = m_Iter->m_Next;
+            return true;
+        }
+    }
+
+    DATA* GetNextElement()
+    {
+        if(m_Iter == nullptr)
+        {
+            return nullptr;
+        }
+        else
+        {
+            DATA* const ret = &m_Iter->m_Data;
+            m_Iter = m_Iter->m_Next;
+            return ret;
         }
     }
     friend class AVLTreeElement<KEY, DATA>;

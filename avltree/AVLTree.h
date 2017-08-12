@@ -16,7 +16,6 @@
 
 template<class KEY>
 inline bool less(const KEY& key1, const KEY& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return memcmp(&key1, &key2, sizeof(KEY))<0;
 }
 template<class KEY>
@@ -35,7 +34,6 @@ inline void copy(KEY* const key1, const KEY* const key2){
 // For primitive type char
 template<>
 inline bool less<char>(const char& key1, const char& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -54,7 +52,6 @@ inline void copy<char>(char* const key1, const char* const key2){
 // For primitive type unsigned char
 template<>
 inline bool less<unsigned char>(const unsigned char& key1, const unsigned char& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -73,7 +70,6 @@ inline void copy<unsigned char>(unsigned char* const key1, const unsigned char* 
 // For primitive type signed char
 template<>
 inline bool less<signed char>(const signed char& key1, const signed char& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -92,7 +88,6 @@ inline void copy<signed char>(signed char* const key1, const signed char* const 
 // For primitive type int
 template<>
 inline bool less<int>(const int& key1, const int& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -111,7 +106,6 @@ inline void copy<int>(int* const key1, const int* const key2){
 // For primitive type unsigned int
 template<>
 inline bool less<unsigned int>(const unsigned int& key1, const unsigned int& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -130,7 +124,6 @@ inline void copy<unsigned int>(unsigned int* const key1, const unsigned int* con
 // For primitive type short int
 template<>
 inline bool less<short int>(const short int& key1, const short int& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -149,7 +142,6 @@ inline void copy<short int>(short int* const key1, const short int* const key2){
 // For primitive type unsigned short int
 template<>
 inline bool less<unsigned short int>(const unsigned short int& key1, const unsigned short int& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -168,7 +160,6 @@ inline void copy<unsigned short int>(unsigned short int* const key1, const unsig
 // For primitive type long int
 template<>
 inline bool less<long int>(const long int& key1, const long int& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -187,7 +178,6 @@ inline void copy<long int>(long int* const key1, const long int* const key2){
 // For primitive type unsigned long int
 template<>
 inline bool less<unsigned long int>(const unsigned long int& key1, const unsigned long int& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -206,7 +196,6 @@ inline void copy<unsigned long int>(unsigned long int* const key1, const unsigne
 // For primitive type float
 template<>
 inline bool less<float>(const float& key1, const float& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -225,7 +214,6 @@ inline void copy<float>(float* const key1, const float* const key2){
 // For primitive type double
 template<>
 inline bool less<double>(const double& key1, const double& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -244,7 +232,6 @@ inline void copy<double>(double* const key1, const double* const key2){
 // For primitive type long double
 template<>
 inline bool less<long double>(const long double& key1, const long double& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -263,7 +250,6 @@ inline void copy<long double>(long double* const key1, const long double* const 
 // For primitive type wchar_t
 template<>
 inline bool less<wchar_t>(const wchar_t& key1, const wchar_t& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>
@@ -282,7 +268,6 @@ inline void copy<wchar_t>(wchar_t* const key1, const wchar_t* const key2){
 // For primitive type std::string
 template<>
 inline bool less<std::string>(const std::string& key1, const std::string& key2){
-    std::cout<<__FUNCTION__<<std::endl;
     return key1 < key2;
 }
 template<>

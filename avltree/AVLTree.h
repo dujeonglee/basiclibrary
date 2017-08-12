@@ -78,7 +78,7 @@ private:
         AVLTreeElement<KEY, DATA>* adjustment_child;
         AVLTreeElement<KEY, DATA>* adjustment_parent;
 
-        if(this == m_Tree->m_Head && this == m_Tree->m_Tail)
+        if(m_Tree->m_Size == 1)
         {
             m_Tree->m_Head = nullptr;
             m_Tree->m_Tail = nullptr;
@@ -359,6 +359,7 @@ public:
         m_Root = nullptr;
         m_Head = nullptr;
         m_Tail = nullptr;
+        m_Iter = nullptr;
         m_Size = 0;
     }
     ~AVLTree<KEY, DATA>(){

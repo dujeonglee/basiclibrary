@@ -834,7 +834,18 @@ private:
 public:
     DATA& operator [](KEY key)
     {
-        return GetRef(key);
+        try
+        {
+            return GetRef(key);
+        }
+        catch (const std::string& ex)
+        {
+            std::cout<<ex<<std::endl;
+            DATA tmp;
+            memset(&tmp, 0, sizeof(DATA));
+            Insert(key, tmp);
+            return GetRef(key);
+        }
     }
     friend class AVLTreeElement<KEY, DATA>;
 };

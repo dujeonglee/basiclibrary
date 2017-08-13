@@ -840,7 +840,6 @@ public:
         }
         catch (const std::string& ex)
         {
-            std::cout<<ex<<std::endl;
             DATA tmp;
             memset(&tmp, 0, sizeof(DATA));
             Insert(key, tmp);

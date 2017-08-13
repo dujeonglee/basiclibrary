@@ -831,6 +831,11 @@ private:
         return 1+(left>right?left:right);
     }
 #endif
+public:
+    DATA& operator [](KEY key)
+    {
+        return GetRef(key);
+    }
     friend class AVLTreeElement<KEY, DATA>;
 };
 

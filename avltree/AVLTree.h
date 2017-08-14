@@ -978,4 +978,8 @@ private:
 #endif
     friend class AVLTreeElement<KEY, DATA>;
 };
+
+template<class KEY, class DATA>
+using AVLMap = AVLTree<KEY, DATA>;
+
 #endif

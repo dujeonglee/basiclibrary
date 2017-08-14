@@ -801,6 +801,21 @@ public:
             return ret;
         }
     }
+    
+    DATA& operator [](const KEY& key)
+    {
+        try
+        {
+            return GetRef(key);
+        }
+        catch (const std::string& ex)
+        {
+            DATA tmp;
+            memset(&tmp, 0, sizeof(DATA));
+            Insert(key, tmp);
+            return GetRef(key);
+        }
+    }
 #ifdef DEBUG_FUNCTIONS
 public:
     void CheckTreeStructure(unsigned int& depth, bool& valid)
@@ -831,21 +846,6 @@ private:
         return 1+(left>right?left:right);
     }
 #endif
-public:
-    DATA& operator [](KEY key)
-    {
-        try
-        {
-            return GetRef(key);
-        }
-        catch (const std::string& ex)
-        {
-            DATA tmp;
-            memset(&tmp, 0, sizeof(DATA));
-            Insert(key, tmp);
-            return GetRef(key);
-        }
-    }
     friend class AVLTreeElement<KEY, DATA>;
 };
 

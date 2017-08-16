@@ -6,14 +6,17 @@
 #include <algorithm>
 //#define BUSYWAITING
 
-#define GCC_VERSION (__GNUC__ * 10000 \
-                     + __GNUC_MINOR__ * 100 \
-                     + __GNUC_PATCHLEVEL__)
-
+#ifdef __linux__ 
+#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #if GCC_VERSION >= 40800
 typedef std::chrono::steady_clock CLOCK;
 #else
 typedef std::chrono::monotonic_clock CLOCK;
+#endif
+#elif _WIN32
+typedef std::chrono::steady_clock CLOCK;
+#else
+typedef std::chrono::steady_clock CLOCK;
 #endif
 
 typedef std::chrono::time_point<CLOCK> SSTTime;

@@ -13,7 +13,6 @@
 #include <functional>
 #include <string>
 #include <string.h>
-#include <jemalloc/jemalloc.h>
 
 template<class KEY> inline bool less(const KEY& key1, const KEY& key2){return memcmp(&key1, &key2, sizeof(KEY))<0;}
 template<class KEY> inline bool greater(const KEY& key1, const KEY& key2){return memcmp(&key1, &key2, sizeof(KEY))>0;}

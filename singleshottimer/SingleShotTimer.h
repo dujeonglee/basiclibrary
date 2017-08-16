@@ -29,11 +29,6 @@ public:
     uint32_t m_Priority;
     uint32_t m_TimerID;
     bool m_Active;
-    void PrintTime()
-    {
-        std::time_t ttp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() + (m_TargetTime - CLOCK::now()));
-        std::cout << "time: " << std::ctime(&ttp);
-    }
 };
 template <uint32_t PRIORITY, uint32_t CONCURRENCY>
 class SingleShotTimer

@@ -4,7 +4,6 @@
 
 int main()
 {
-    #if 0
     std::cout<<"--------------------------------------------------------------------"<<std::endl;
     { 
         std::cout<<"How to start and stop timer."<<std::endl;
@@ -12,7 +11,7 @@ int main()
     }
     std::cout<<"--------------------------------------------------------------------"<<std::endl;
     {
-        std::cout<<"How to schedule task."<<std::endl;
+        std::cout<<"How to schedule a task."<<std::endl;
         SingleShotTimer<1, 1> timer;
         timer.ScheduleTaskNoExcept(1000, [](){
             std::cout<<"Do something"<<std::endl;
@@ -21,10 +20,10 @@ int main()
     }
     std::cout<<"--------------------------------------------------------------------"<<std::endl;
     {
-        std::cout<<"How to cancel task."<<std::endl;
+        std::cout<<"How to cancel a task."<<std::endl;
         SingleShotTimer<1, 1> timer;
         uint32_t task1 = timer.ScheduleTaskNoExcept(1000, [](){
-            std::cout<<"This task is not served."<<std::endl;
+            std::cout<<"This task will not be served."<<std::endl;
         });
         timer.ScheduleTaskNoExcept(1000, [](){
             std::cout<<"Only this task is served."<<std::endl;
@@ -32,12 +31,12 @@ int main()
         timer.CancelTask(task1);
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
     }
-    #endif
     std::cout<<"--------------------------------------------------------------------"<<std::endl;
     {
         std::cout<<"How to start periodic task."<<std::endl;
         SingleShotTimer<1, 1> timer;
         uint32_t data = 0;
+        std::cout<<"Periodic task ends when counting 49."
         timer.PeriodicTask(10, [&data]()->bool{
             if(data < 50)
             {

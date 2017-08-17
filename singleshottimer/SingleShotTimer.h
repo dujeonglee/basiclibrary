@@ -291,7 +291,7 @@ public:
     }
 
 private:
-    static void PeriodicTaskWrapper(SingleShotTimer<PRIORITY, CONCURRENCY>* timer, uint32_t interval, const std::function<bool()> task, uint32_t priority = 0)
+    static void PeriodicTaskWrapper(SingleShotTimer<PRIORITY, CONCURRENCY>* const timer, const uint32_t interval, const std::function<bool()> task, const uint32_t priority = 0)
     {
         std::function<void()> wrapper = std::bind(SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapper, timer, interval, task, priority);
         if(task())
@@ -301,7 +301,7 @@ private:
     }
 
 public:
-    void PeriodicTask(uint32_t interval, const std::function<bool()> task, uint32_t priority = 0)
+    void PeriodicTask(const uint32_t interval, const std::function<bool()> task, const uint32_t priority = 0)
     {
         SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapper(this, interval, task, priority);
     }

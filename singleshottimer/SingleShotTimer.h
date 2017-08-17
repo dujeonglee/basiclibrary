@@ -4,6 +4,8 @@
 #include <chrono>
 #include <ctime>
 #include <algorithm>
+#include <map>
+#include <tuple>
 //#define BUSYWAITING
 
 #ifdef __linux__ 
@@ -288,6 +290,22 @@ public:
     {
         std::unique_lock<std::mutex> APIlock(m_APILock);
         return m_Running;
+    }
+
+private:
+    static void PeriodicTaskWrapper(SingleShotTimer<PRIORITY, CONCURRENCY>* timer, uint32_t interval, const std::function<bool()> task, uint32_t priority = 0)
+    {
+        std::function<void()> wrapper = std::bind(SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapper, timer, interval, task, priority);
+        if(task())
+        {
+            timer->ScheduleTaskNoExcept(interval, wrapper, priority);
+        }
+    }
+
+public:
+    void PeriodicTask(uint32_t interval, const std::function<bool()> task, uint32_t priority = 0)
+    {
+        SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapper(this, interval, task, priority);
     }
 };
 #undef GCC_VERSION

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <ctime>
 #include <algorithm>
+#include <map>
 //#define BUSYWAITING
 
 #ifdef __linux__ 
@@ -30,6 +31,17 @@ public:
     uint32_t m_TimerID;
     bool m_Active;
 };
+
+class PeriodicTaskInfo
+{
+public:
+    std::string m_Name;
+    std::function <void()> m_Task;
+    std::function <void()> m_TaskWrapper;
+    uint32_t m_Interval;
+    uint32_t m_Priority;
+    uint32_t m_TimerID;
+};
 template <uint32_t PRIORITY, uint32_t CONCURRENCY>
 class SingleShotTimer
 {
@@ -39,6 +51,7 @@ private:
     std::mutex m_ActiveTimerInfoListLock;
     std::condition_variable m_Condition;
     std::vector<TimerInfo*> m_ActiveTimerInfoList;
+    std::map<std::string, PeriodicTaskInfo> m_PeriodicTaskList;
     std::thread* m_Thread;
     ThreadPool<PRIORITY, CONCURRENCY> m_ThreadPool;
     std::atomic<bool> m_Running;
@@ -59,7 +72,7 @@ public:
         Stop();
     }
 
-    uint32_t ImmediateTaskNoExcept(std::function <void()> to, uint32_t priority = 0)
+    uint32_t ImmediateTaskNoExcept(const std::function <void()> to, const uint32_t priority = 0)
     {
         uint32_t ret = INVALID_TIMER_ID;
         while (ret == INVALID_TIMER_ID && m_Running)
@@ -69,7 +82,7 @@ public:
         return ret;
     }
 
-    uint32_t ScheduleTaskNoExcept(uint32_t milli, std::function <void()> to, uint32_t priority = 0)
+    uint32_t ScheduleTaskNoExcept(const uint32_t milli, const std::function <void()> to, const uint32_t priority = 0)
     {
         uint32_t ret = INVALID_TIMER_ID;
         while (ret == INVALID_TIMER_ID && m_Running)
@@ -79,12 +92,12 @@ public:
         return ret;
     }
     
-    uint32_t ImmediateTask(std::function <void()> to, uint32_t priority = 0)
+    uint32_t ImmediateTask(const std::function <void()> to, const uint32_t priority = 0)
     {
         return ScheduleTask(0, to, priority);
     }
 
-    uint32_t ScheduleTask(uint32_t milli, std::function <void()> to, uint32_t priority = 0)
+    uint32_t ScheduleTask(const uint32_t milli, const std::function <void()> to, const uint32_t priority = 0)
     {
         std::lock_guard<std::mutex> APILock(m_APILock);
         if(m_Running == false)
@@ -247,11 +260,20 @@ public:
 
     void Stop()
     {
+        std::thread periodictaskpurge = std::thread([this](){
+            while(m_PeriodicTaskList.size() > 0)
+            {
+                UnregisterPeriodicTask(m_PeriodicTaskList.begin()->second.m_Name);
+            }
+        });
+        periodictaskpurge.join();
+
         std::unique_lock<std::mutex> APIlock(m_APILock);
         if(!m_Running)
         {
             return;
         }
+
         m_Running = false;
         m_Condition.notify_one();
         if(m_Thread->joinable())
@@ -273,13 +295,100 @@ public:
 
     size_t Timers()
     {
+        std::unique_lock<std::mutex> APIlock(m_APILock);
         std::unique_lock<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
         return m_ActiveTimerInfoList.size();
     }
 
     bool Running()
     {
+        std::unique_lock<std::mutex> APIlock(m_APILock);
         return m_Running;
+    }
+
+    bool RegisterPeriodicTask(const std::string& name, const uint32_t interval, const std::function<void()> task, const uint32_t priority = 0)
+    {
+        std::function <void()>* m_Task = nullptr;
+        std::function <void()>* m_TaskWrapper = nullptr;
+        uint32_t* m_Interval = nullptr;
+        uint32_t* m_Priority = nullptr;
+        uint32_t* m_TimerID = nullptr;
+        { // Critical section
+            std::unique_lock<std::mutex> APIlock(m_APILock);
+            if(m_Running == false)
+            {
+                return false;
+            }
+            if(m_PeriodicTaskList.find(name) != m_PeriodicTaskList.end())
+            {
+                return true;
+            }
+            try
+            {
+                PeriodicTaskInfo& newtask = m_PeriodicTaskList[name];
+                m_Task = &newtask.m_Task;
+                m_TaskWrapper = &newtask.m_TaskWrapper;
+                m_Interval = &newtask.m_Interval;
+                m_Priority = &newtask.m_Priority;
+                m_TimerID = &newtask.m_TimerID;
+
+                newtask.m_Name = name;
+                newtask.m_Task = task;
+                newtask.m_TaskWrapper = [this, m_Task, m_TaskWrapper, m_Interval, m_Priority, m_TimerID](){
+                    (*m_Task)();
+                    (*m_TimerID) = ScheduleTaskNoExcept((*m_Interval), (*m_TaskWrapper), (*m_Priority));
+                };
+                newtask.m_Interval = interval;
+                newtask.m_Priority = priority;
+                newtask.m_TimerID = INVALID_TIMER_ID;
+            }
+            catch (const std::bad_alloc& ex)
+            {
+                return false;
+            }
+        }
+        (*m_TaskWrapper)();
+        std::cout<<name<<" is added to the periodic task list."<<std::endl;
+        return true;
+    }
+
+    void UnregisterPeriodicTask(const std::string& name)
+    {
+        PeriodicTaskInfo task;
+        {// Critical section
+            std::unique_lock<std::mutex> APIlock(m_APILock);
+            if(m_Running == false)
+            {
+                return;
+            }
+            if(m_PeriodicTaskList.find(name) == m_PeriodicTaskList.end())
+            {
+                return;
+            }
+            task = m_PeriodicTaskList[name];
+            if(task.m_TimerID < MINIMUM_TIMER_ID)
+            {
+                return;
+            }
+            std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
+            for(uint32_t i = 0 ; i < m_ActiveTimerInfoList.size() ; i++)
+            {
+                if(m_ActiveTimerInfoList[i]->m_TimerID == task.m_TimerID &&
+                    m_ActiveTimerInfoList[i]->m_Active)
+                {
+                    m_ActiveTimerInfoList[i]->m_Active = false;
+                    break;
+                }
+            }
+        }
+        volatile bool removed = false;
+        ScheduleTaskNoExcept(task.m_Interval, [this, name, &removed](){
+            std::unique_lock<std::mutex> APIlock(m_APILock);
+            m_PeriodicTaskList.erase(name);
+            std::cout<<name<<" is removed from the periodic task list."<<std::endl;
+            removed = true;
+        });
+        while(removed == false);
     }
 };
 #undef GCC_VERSION

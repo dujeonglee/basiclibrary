@@ -185,7 +185,7 @@ public:
                         {
                             while(self->m_ActiveTimerInfoList.size() == 0 && self->m_Running)
                             {
-                                self->m_Condition.wait(ActiveTimerInfoListLock);
+                                self->m_Condition.wait_for(ActiveTimerInfoListLock, std::chrono::milliseconds(500));
                             }
                         }
                         if(!self->m_Running)
@@ -243,38 +243,32 @@ public:
         {
             std::cout<<ex.what()<<std::endl;
         }
-        std::cout<<"SingleShotTimer is started"<<std::endl;
     }
 
     void Stop()
     {
-        SingleShotTimer* const self = this;
-        std::thread StopThread = std::thread([self](){
-            std::unique_lock<std::mutex> APIlock(self->m_APILock);
-            if(!self->m_Running)
-            {
-                return;
-            }
+        std::unique_lock<std::mutex> APIlock(m_APILock);
+        if(!m_Running)
+        {
+            return;
+        }
 
-            self->m_Running = false;
-            self->m_Condition.notify_one();
-            if(self->m_Thread->joinable())
+        m_Running = false;
+        m_Condition.notify_one();
+        if(m_Thread->joinable())
+        {
+            m_Thread->join();
+        }
+        delete m_Thread;
+        {
+            std::unique_lock<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
+            for(uint32_t i = 0 ; i < m_ActiveTimerInfoList.size() ; i++)
             {
-                self->m_Thread->join();
+                delete m_ActiveTimerInfoList[i];
             }
-            delete self->m_Thread;
-            {
-                std::unique_lock<std::mutex> ActiveTimerInfoListLock(self->m_ActiveTimerInfoListLock);
-                for(uint32_t i = 0 ; i < self->m_ActiveTimerInfoList.size() ; i++)
-                {
-                    delete self->m_ActiveTimerInfoList[i];
-                }
-                self->m_ActiveTimerInfoList.clear();
-            }
-            self->m_ThreadPool.Stop();
-            std::cout<<"SingleShotTimer is stopped"<<std::endl;
-        });
-        StopThread.detach();
+            m_ActiveTimerInfoList.clear();
+        }
+        m_ThreadPool.Stop();
     }
 
     size_t Timers()

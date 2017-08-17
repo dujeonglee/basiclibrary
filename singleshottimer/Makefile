@@ -15,15 +15,15 @@ $(TARGET) : $(OBJECTS)
 	$(CPP) -o $@  $^ -pg $(LIBRARY)
 
 .cpp.o : $(SOURCES)
-	$(CPP) $(SOURCES) $(CPPFLAGS) -DTIMERINFOPOOLING $(INCLUDES) $(LIBRARY)
+	$(CPP) $(SOURCES) $(CPPFLAGS) $(INCLUDES) $(LIBRARY)
 
 clean :
 	rm -rf $(OBJECTS) $(TARGET) *~ gmon.out *.bak
 
-debug : CPPFLAGS := -g -pg -c -Wall -std=c++11 -fopenmp
+debug : CPPFLAGS := -g -c -Wall -std=c++11
 debug : $(TARGET)
 
-release : CPPFLAGS := -O3 -pg -c -Wall -std=c++11 -fopenmp
+release : CPPFLAGS := -O3 -c -Wall -std=c++11
 release : $(TARGET)
 #	./$(TARGET)
 #	gprof ./$(TARGET) gmon.out

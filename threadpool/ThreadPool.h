@@ -49,7 +49,7 @@ class ThreadPool
                     std::unique_lock<std::mutex> TaskQueueLock(m_Pool->m_TaskQueueLock);
                     while(!ShouldWakeup())
                     {
-                        m_Pool->m_Condition.wait(TaskQueueLock);
+                        m_Pool->m_Condition.wait_for(TaskQueueLock, std::chrono::milliseconds(500));
                     }
                     if(this->m_State == STATE::DESTROY)
                     {
@@ -271,34 +271,28 @@ public:
             }
         }
         m_ActiveWorkers = 0;
-        std::cout<<"ThreadPool is started."<<std::endl;
     }
 
     void Stop()
     {
-        ThreadPool * const self = this;
-        std::thread StopThread = std::thread([self](){
-            std::unique_lock<std::mutex> ApiLock(self->m_APILock);
-            if(self->m_State == POOL_STATE::STOPPED)
+        std::unique_lock<std::mutex> ApiLock(m_APILock);
+        if(m_State == POOL_STATE::STOPPED)
+        {
+            return;
+        }
+        m_State = POOL_STATE::STOPPED;
+        {
+            std::unique_lock<std::mutex> WorkerQueueLock(m_WorkerQueueLock);
+            while(!m_WorkerQueue.empty())
             {
-                return;
+                m_WorkerQueue.front()->state(WorkerThread::DESTROY);
+                m_WorkerQueue.pop();
             }
-            self->m_State = POOL_STATE::STOPPED;
-            {
-                std::unique_lock<std::mutex> WorkerQueueLock(self->m_WorkerQueueLock);
-                while(!self->m_WorkerQueue.empty())
-                {
-                    self->m_WorkerQueue.front()->state(WorkerThread::DESTROY);
-                    self->m_WorkerQueue.pop();
-                }
-            }
-            {
-                std::unique_lock<std::mutex> TaskQueueLock(self->m_TaskQueueLock);
-                self->m_TaskQueue.clear();
-            }
-            std::cout<<"ThreadPool is stopped."<<std::endl;
-        });
-        StopThread.detach();
+        }
+        {
+            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
+            m_TaskQueue.clear();
+        }
     }
 };
 

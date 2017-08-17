@@ -1,43 +1,56 @@
 #include "SingleShotTimer.h"
 #include <iostream>
-#include <unistd.h>
 
-class Interval
-{
-private:
-    SingleShotTimer<2, 1> m_Timer;
-    std::atomic<bool> m_Running;
-    unsigned short i;
-public:
-    void PeriodicTask()
-    {
-        if(m_Running)
-        {
-            std::cout<<"Tick: "<<+i++<<std::endl;
-            Interval* const self = this;
-            m_Timer.ScheduleTaskNoExcept(100, [self](){
-                self->PeriodicTask();
-            });
-        }
-    }
-    void Start()
-    {
-        i = 0;
-        m_Running = true;
-        PeriodicTask();
-    }
-    void Stop()
-    {
-        m_Running = false;
-    }
-};
 
 int main()
 {
-    Interval interval;
-    interval.Start();
-    std::this_thread::sleep_for(std::chrono::milliseconds(9500));
-    interval.Stop();
-    while(1);
+    #if 0
+    std::cout<<"--------------------------------------------------------------------"<<std::endl;
+    { 
+        std::cout<<"How to start and stop timer."<<std::endl;
+        SingleShotTimer<1/*Number of threads*/, 1/*Priority levels*/> timer;// Timer is automatically started when instanciation.
+    }
+    std::cout<<"--------------------------------------------------------------------"<<std::endl;
+    {
+        std::cout<<"How to schedule task."<<std::endl;
+        SingleShotTimer<1, 1> timer;
+        timer.ScheduleTaskNoExcept(1000, [](){
+            std::cout<<"Do something"<<std::endl;
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    }
+    std::cout<<"--------------------------------------------------------------------"<<std::endl;
+    {
+        std::cout<<"How to cancel task."<<std::endl;
+        SingleShotTimer<1, 1> timer;
+        uint32_t task1 = timer.ScheduleTaskNoExcept(1000, [](){
+            std::cout<<"This task is not served."<<std::endl;
+        });
+        timer.ScheduleTaskNoExcept(1000, [](){
+            std::cout<<"Only this task is served."<<std::endl;
+        });
+        timer.CancelTask(task1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    }
+    #endif
+    std::cout<<"--------------------------------------------------------------------"<<std::endl;
+    {
+        std::cout<<"How to start periodic task."<<std::endl;
+        SingleShotTimer<1, 1> timer;
+        uint32_t data = 0;
+        timer.PeriodicTask(10, [&data]()->bool{
+            if(data < 50)
+            {
+                std::cout<<"Count down "<<data++<<"/49"<<std::endl;
+                return true; /*Schedule the task after 10ms.*/
+            }
+            else
+            {
+                return false; /*Stop the task.*/
+            }
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+    std::cout<<"--------------------------------------------------------------------"<<std::endl;
     return 0;
 }

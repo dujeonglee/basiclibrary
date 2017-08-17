@@ -20,10 +20,10 @@ $(TARGET) : $(OBJECTS)
 clean :
 	rm -rf $(OBJECTS) $(TARGET) *~ gmon.out *.bak
 
-debug : CPPFLAGS := -g -c -Wall -std=c++11
+debug : CPPFLAGS := -g -c -Wall -std=c++0x
 debug : $(TARGET)
 
-release : CPPFLAGS := -O3 -c -Wall -std=c++11
+release : CPPFLAGS := -O3 -c -Wall -std=c++0x
 release : $(TARGET)
 #	./$(TARGET)
 #	gprof ./$(TARGET) gmon.out

@@ -26,7 +26,7 @@ int main()
         uint32_t task1 = timer.ScheduleTaskNoExcept(1000, []()->void{
             std::cout<<"This task will not be served."<<std::endl;
         });
-        timer.ScheduleTaskNoExcept(1000, [](){
+        timer.ScheduleTaskNoExcept(1000, []()->void{
             std::cout<<"Only this task is served."<<std::endl;
         });
         timer.CancelTask(task1);
@@ -39,9 +39,9 @@ int main()
         uint32_t data = 0;
         std::cout<<"Periodic task ends when counting 49.";
         timer.PeriodicTask(10, [&data]()->bool{
+            std::cout<<"Count down "<<data++<<"/49"<<std::endl;
             if(data < 50)
             {
-                std::cout<<"Count down "<<data++<<"/49"<<std::endl;
                 return true; /*Schedule the task after 10ms.*/
             }
             else

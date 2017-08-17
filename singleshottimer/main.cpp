@@ -7,7 +7,7 @@ int main()
     std::cout<<"--------------------------------------------------------------------"<<std::endl;
     { 
         std::cout<<"How to start and stop timer."<<std::endl;
-        SingleShotTimer<1/*Number of threads*/, 1/*Priority levels*/> timer;// Timer is automatically started when instanciation.
+        SingleShotTimer<1/*Priority levels*/, 1/*Number of threads*/> timer;// Timer is automatically started when instanciation.
         timer.Stop();/*If one does not call "Stop", Dtor will call "Stop".*/
     }
     std::cout<<"--------------------------------------------------------------------"<<std::endl;

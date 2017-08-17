@@ -276,25 +276,28 @@ public:
 
     void Stop()
     {
-        std::unique_lock<std::mutex> ApiLock(m_APILock);
-        if(m_State == POOL_STATE::STOPPED)
-        {
-            return;
-        }
-        m_State = POOL_STATE::STOPPED;
-        {
-            std::unique_lock<std::mutex> WorkerQueueLock(m_WorkerQueueLock);
-            while(!m_WorkerQueue.empty())
+        std::thread StopThread = std::thread([this](){
+            std::unique_lock<std::mutex> ApiLock(m_APILock);
+            if(m_State == POOL_STATE::STOPPED)
             {
-                m_WorkerQueue.front()->state(WorkerThread::DESTROY);
-                m_WorkerQueue.pop();
+                return;
             }
-        }
-        {
-            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
-            m_TaskQueue.clear();
-        }
-        std::cout<<"ThreadPool is stopped."<<std::endl;
+            m_State = POOL_STATE::STOPPED;
+            {
+                std::unique_lock<std::mutex> WorkerQueueLock(m_WorkerQueueLock);
+                while(!m_WorkerQueue.empty())
+                {
+                    m_WorkerQueue.front()->state(WorkerThread::DESTROY);
+                    m_WorkerQueue.pop();
+                }
+            }
+            {
+                std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
+                m_TaskQueue.clear();
+            }
+            std::cout<<"ThreadPool is stopped."<<std::endl;
+        });
+        StopThread.detach();
     }
 };
 

@@ -14,31 +14,36 @@ int main()
     {
         std::cout<<"How to schedule a task."<<std::endl;
         SingleShotTimer<1, 1> timer;
-        timer.ScheduleTaskNoExcept(1000, []()->void{
+        volatile bool completed = false;
+        timer.ScheduleTaskNoExcept(1000, [&completed]()->void{
             std::cout<<"Do something"<<std::endl;
+            completed = true;
         });
-        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+        while(!completed);
     }
     std::cout<<"--------------------------------------------------------------------"<<std::endl;
     {
         std::cout<<"How to cancel a task."<<std::endl;
         SingleShotTimer<1, 1> timer;
-        uint32_t task1 = timer.ScheduleTaskNoExcept(1000, []()->void{
+        volatile bool completed = false;
+        uint32_t task1 = timer.ScheduleTaskNoExcept(1000, [&completed]()->void{
             std::cout<<"This task will not be served."<<std::endl;
         });
-        timer.ScheduleTaskNoExcept(1000, []()->void{
+        timer.ScheduleTaskNoExcept(1000, [&completed]()->void{
             std::cout<<"Only this task is served."<<std::endl;
+            completed = true;
         });
         timer.CancelTask(task1);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+        while(!completed);
     }
     std::cout<<"--------------------------------------------------------------------"<<std::endl;
     {
         std::cout<<"How to start periodic task."<<std::endl;
         SingleShotTimer<1, 1> timer;
         uint32_t data = 0;
+        volatile bool completed = false;
         std::cout<<"Periodic task ends when counting 49.";
-        timer.PeriodicTask(10, [&data]()->bool{
+        timer.PeriodicTask(10, [&data, &completed]()->const bool{
             std::cout<<"Count down "<<data++<<"/49"<<std::endl;
             if(data < 50)
             {
@@ -47,10 +52,35 @@ int main()
             else
             {
                 std::cout<<"Periodic task is completed"<<std::endl;
+                completed = true;
                 return false; /*Stop the task.*/
             }
         });
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        while(!completed);
+    }
+    std::cout<<"--------------------------------------------------------------------"<<std::endl;
+    {
+        std::cout<<"How to start advanced periodic task."<<std::endl;
+        SingleShotTimer<1, 1> timer;
+        uint32_t data = 0;
+        volatile bool completed = false;
+        std::cout<<"Periodic task with random delay ends when counting 49.";
+        timer.PeriodicTaskAdv([&data, &completed]()->const std::tuple<bool, uint32_t, uint32_t>{
+            std::cout<<"Count down "<<data++<<"/49"<<std::endl;
+            if(data < 50)
+            {
+                uint32_t delay = rand()%1000;
+                std::cout<<"Sleep for "<< delay << std::endl;
+                return std::make_tuple(true, delay, 0); /*Schedule the task after delay ms with priority 0.*/
+            }
+            else
+            {
+                std::cout<<"Periodic task is completed"<<std::endl;
+                completed = true;
+                return std::make_tuple(false, 0, 0); /*Stop the task.*/
+            }
+        });
+        while(!completed);
     }
     std::cout<<"--------------------------------------------------------------------"<<std::endl;
     return 0;

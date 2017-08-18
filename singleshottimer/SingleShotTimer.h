@@ -285,7 +285,7 @@ public:
 	}
 
 private:
-	static void PeriodicTaskWrapper(SingleShotTimer<PRIORITY, CONCURRENCY>* const timer, const uint32_t interval, const std::function<bool()> task, const uint32_t priority = 0)
+	static void PeriodicTaskWrapper(SingleShotTimer<PRIORITY, CONCURRENCY>* const timer, const uint32_t interval, const std::function<const bool(void)> task, const uint32_t priority = 0)
 	{
 		std::function<void()> wrapper = std::bind(SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapper, timer, interval, task, priority);
 		if (task())
@@ -293,11 +293,24 @@ private:
 			timer->ScheduleTaskNoExcept(interval, wrapper, priority);
 		}
 	}
+	static void PeriodicTaskWrapperAdv(SingleShotTimer<PRIORITY, CONCURRENCY>* const timer, const std::function<const std::tuple<bool, uint32_t, uint32_t>(void)> task)
+	{
+		std::function<void()> wrapper = std::bind(SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapperAdv, timer, task);
+        const std::tuple<bool, uint32_t, uint32_t> ret = task();
+		if(std::get<0>(ret))
+		{
+			timer->ScheduleTaskNoExcept(std::get<1>(ret), wrapper, std::get<2>(ret));
+		}
+	}
 
 public:
-	void PeriodicTask(const uint32_t interval, const std::function<bool()> task, const uint32_t priority = 0)
+	void PeriodicTask(const uint32_t interval, const std::function<const bool(void)> task, const uint32_t priority = 0)
 	{
 		SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapper(this, interval, task, priority);
+	}
+	void PeriodicTaskAdv(const std::function<const std::tuple<bool, uint32_t, uint32_t>(void)> task)
+	{
+		SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapperAdv(this, task);
 	}
 };
 

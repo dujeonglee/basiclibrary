@@ -114,6 +114,7 @@ private:
     enum POOL_STATE: unsigned char
     {
         STARTED,
+        FINALIZE,
         STOPPED
     };
     POOL_STATE m_State;
@@ -185,6 +186,40 @@ public:
         {
             return false;
         }
+        if(m_State == FINALIZE)
+        {
+            // Say as if the task is queued.
+            // But actually not queueing.
+            return true;
+        }
+        {
+            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
+            try
+            {
+                m_TaskQueue[priority].push(task);
+                m_Condition.notify_one();
+            }
+            catch(std::bad_alloc& ex)
+            {
+                std::cout<<ex.what()<<std::endl;
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool EnqueueFinalTask(std::function<void()> task, const unsigned long priority = 0)
+    {
+        std::unique_lock<std::mutex> ApiLock(m_APILock);
+        if(m_State == STOPPED || m_State == FINALIZE)
+        {
+            return false;
+        }
+        if(priority >= PRIORITY_LEVEL)
+        {
+            return false;
+        }
+        m_State = FINALIZE;
         {
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
             try
@@ -276,11 +311,11 @@ public:
     void Stop()
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
-        if(m_State == POOL_STATE::STOPPED)
+        if(m_State == STOPPED)
         {
             return;
         }
-        m_State = POOL_STATE::STOPPED;
+        m_State = STOPPED;
         {
             std::unique_lock<std::mutex> WorkerQueueLock(m_WorkerQueueLock);
             while(!m_WorkerQueue.empty())

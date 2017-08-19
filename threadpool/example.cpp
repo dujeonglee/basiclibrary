@@ -1,50 +1,47 @@
-#include <iostream>
 #include "ThreadPool.h"
+#include <iostream>
 
 int main(int argc, char *argv[])
 {
-    ThreadPool<1,1> pool;
-    std::cout<<"Sole worker"<<std::endl;
-    for(uint32_t i = 0 ; i < 10 ; i++)
+    std::cout<<"--------------------------------------------------------------------"<<std::endl;
     {
-        pool.Enqueue([i](){
-            std::cout<<"Task: "<<i<<std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        });
+        std::cout<<"One thread"<<std::endl;
+        ThreadPool<1/*Number of priority levels*/,1/*Number of threads*/> threadpool;
+        for(unsigned int i = 0 ; i < 10 ; i++)
+        {
+            threadpool.Enqueue([i](){
+                std::cout<<"Task "<<i<<std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            });
+        }
+        while(threadpool.Tasks());
     }
-    while(pool.Tasks());
-
-    std::cout<<"Two workers"<<std::endl;
-    pool.ResizeWorkerQueue(2);
-    for(uint32_t i = 0 ; i < 10 ; i++)
+    std::cout<<"--------------------------------------------------------------------"<<std::endl;
     {
-        pool.Enqueue([i](){
-            std::cout<<"Task: "<<i<<std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        });
+        std::cout<<"Two threads"<<std::endl;
+        ThreadPool<1/*Number of priority levels*/,2/*Number of threads*/> threadpool;
+        for(unsigned int i = 0 ; i < 10 ; i++)
+        {
+            threadpool.Enqueue([i](){
+                std::cout<<"Task "<<i<<std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            });
+        }
+        while(threadpool.Tasks());
     }
-    while(pool.Tasks());
-
-    std::cout<<"Three workers"<<std::endl;
-    pool.ResizeWorkerQueue(3);
-    for(uint32_t i = 0 ; i < 10 ; i++)
+    std::cout<<"--------------------------------------------------------------------"<<std::endl;
     {
-        pool.Enqueue([i](){
-            std::cout<<"Task: "<<i<<std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        });
+        std::cout<<"Three threads"<<std::endl;
+        ThreadPool<1/*Number of priority levels*/,3/*Number of threads*/> threadpool;
+        for(unsigned int i = 0 ; i < 10 ; i++)
+        {
+            threadpool.Enqueue([i](){
+                std::cout<<"Task "<<i<<std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            });
+        }
+        while(threadpool.Tasks());
     }
-    while(pool.Tasks());
-
-    std::cout<<"Sole worker"<<std::endl;
-    pool.ResizeWorkerQueue(1);
-    for(uint32_t i = 0 ; i < 10 ; i++)
-    {
-        pool.Enqueue([i](){
-            std::cout<<"Task: "<<i<<std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        });
-    }
-    while(pool.Tasks());
-    return 0;
+    std::cout<<"--------------------------------------------------------------------"<<std::endl;
+	return 0;
 }

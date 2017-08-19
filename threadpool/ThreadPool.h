@@ -273,7 +273,7 @@ public:
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
             std::swap(m_TaskQueue[0], empty);
         }
-        for(size_t i = 0 ; i < currentworkers*2 ; i++)
+        for(size_t i = 0 ; i < currentworkers ; i++)
         {
             FireWorker();
         }

@@ -53,7 +53,7 @@ private:
                     std::unique_lock<std::mutex> TaskQueueLock(self->m_TaskQueueLock);
                     while(!self->ShouldWakeup())
                     {
-                        self->m_Condition.wait_for(TaskQueueLock, std::chrono::milliseconds(500));
+                        self->m_Condition.wait(TaskQueueLock);
                     }
                     for(unsigned long priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
                     {

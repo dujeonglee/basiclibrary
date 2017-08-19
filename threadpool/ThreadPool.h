@@ -14,21 +14,32 @@ template <unsigned long PRIORITY_LEVEL, unsigned long INITIAL_THREADS>
 class ThreadPool
 {
 private:
-    std::mutex m_APILock;
+    // State of ThreadPool 
     enum POOL_STATE: unsigned char
     {
         STARTED,
         STOPPED
     };
-
     POOL_STATE m_State;
 
+    // Task list
     std::vector< std::queue < std::function<void()> > > m_TaskQueue;
+
+    // Synchronization of m_TaskQueue
     std::mutex m_TaskQueueLock;
-    std::atomic< size_t > m_Workers;
-    std::atomic< size_t > m_ActiveWorkers;
     std::condition_variable m_Condition;
+
+    // Number of workers
+    std::atomic< size_t > m_Workers;
+
+    // Number of active workers, i.e., currently serving tasks.
+    std::atomic< size_t > m_ActiveWorkers;
+
+    // API call synchronization among applications.
+    std::mutex m_APILock;
 private:
+
+    // Create one thread.
     void HireWorker()
     {
         ThreadPool * const self = this;
@@ -63,6 +74,8 @@ private:
                 }
                 else
                 {
+                    // "null task" is used as a fire worker signal.
+                    // Any threads getting "null task" will exit the loop.
                     break;
                 }
             }
@@ -71,6 +84,7 @@ private:
         Worker.detach();
     }
 
+    // Purge one thread
     void FireWorker()
     {
         std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
@@ -90,9 +104,8 @@ private:
         while (1);
     }
 public:
-    ThreadPool()
+    ThreadPool() : m_State(STOPPED)
     {
-        m_State = STOPPED;
         Start();
     }
 
@@ -113,12 +126,14 @@ public:
         return false;
     }
 
-    size_t ResizeWorkerQueue(size_t size)
+    size_t ResizeWorkerQueue(const size_t size)
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
         if(size == 0)
         {
-            return 0;
+            // Invalid size
+            // Return current size
+            return m_Workers;
         }
         if(size == m_Workers)
         {
@@ -147,7 +162,7 @@ public:
         return m_Workers;
     }
 
-    bool Enqueue(std::function<void()> task, const unsigned long priority = 0)
+    bool Enqueue(const std::function<void()> task, const unsigned long priority = 0)
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
         if(m_State == STOPPED)

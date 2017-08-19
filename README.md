@@ -3,6 +3,14 @@ Implementation of basic data structures and libraries for own study.
 
 ## Header only data structures
   - AVL Tree: Insert, find, remove functions are provided.
+```
+AVLTree<uint32_t/*Key Type*/, std::string/*Data Type*/> map;
+map[1] = std::string("Jake");
+map[2] = std::string("Tim");
+std::cout<<map[1]<<std::endl;
+map[1] = std::string("Fake");
+std::cout<<map[1]<<std::endl;
+```
 ## Libraries
   - SingleShotTimer: C++11 based timer library. One can use this library to implement asynchronous software architecture.
 ```

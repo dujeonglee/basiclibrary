@@ -40,7 +40,7 @@ private:
 	std::mutex m_ActiveTimerInfoListLock;
 	std::condition_variable m_Condition;
 	std::vector<TimerInfo*> m_ActiveTimerInfoList;
-	std::thread* m_Thread;
+	std::thread m_Thread;
 	ThreadPool<PRIORITY, CONCURRENCY> m_ThreadPool;
 	std::atomic<bool> m_Running;
 	uint32_t m_TimerID;
@@ -174,7 +174,7 @@ public:
 		{
 			m_ThreadPool.Start();
 			SingleShotTimer* const self = this;
-			m_Thread = new std::thread([self]()
+			m_Thread = std::thread([self]()
 			{
 				while (self->m_Running)
 				{
@@ -255,11 +255,10 @@ public:
 
 		m_Running = false;
 		m_Condition.notify_one();
-		if (m_Thread->joinable())
+		if (m_Thread.joinable())
 		{
-			m_Thread->join();
+			m_Thread.join();
 		}
-		delete m_Thread;
 		{
 			std::unique_lock<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
 			for (uint32_t i = 0; i < m_ActiveTimerInfoList.size(); i++)

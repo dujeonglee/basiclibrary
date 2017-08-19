@@ -65,8 +65,6 @@ private:
                         }
                     }
                 }
-                // Wakeup next worker
-                self->m_Condition.notify_one();
                 if(task)
                 {
                     self->m_ActiveWorkers++;

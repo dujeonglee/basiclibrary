@@ -87,7 +87,7 @@ public:
 
     uint32_t ScheduleTask(const uint32_t milli, const std::function <void()> to, const uint32_t priority = 0)
     {
-        std::lock_guard<std::mutex> APILock(m_APILock);
+        std::unique_lock<std::mutex> APILock(m_APILock);
         if (m_Running == false)
         {
             return INVALID_TIMER_ID;
@@ -121,7 +121,7 @@ public:
 
         // 3. Push TimerInfo into ActiveTimerList, which is min heap.
         {
-            std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
+            std::unique_lock<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
             try
             {
                 m_ActiveTimerInfoList.push_back(newone);
@@ -142,7 +142,7 @@ public:
 
     void CancelTask(const uint32_t timerid)
     {
-        std::lock_guard<std::mutex> APILock(m_APILock);
+        std::unique_lock<std::mutex> APILock(m_APILock);
         if (m_Running == false)
         {
             return;
@@ -151,7 +151,7 @@ public:
         {
             return;
         }
-        std::lock_guard<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
+        std::unique_lock<std::mutex> ActiveTimerInfoListLock(m_ActiveTimerInfoListLock);
         for (uint32_t i = 0; i < m_ActiveTimerInfoList.size(); i++)
         {
             if (m_ActiveTimerInfoList[i]->m_TimerID == timerid)

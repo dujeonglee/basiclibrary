@@ -40,10 +40,11 @@ int main()
     {
         std::cout<<"How to start periodic task."<<std::endl;
         SingleShotTimer<1, 1> timer;
+        const uint32_t delay = 10;
         uint32_t data = 0;
         volatile bool completed = false;
-        std::cout<<"Periodic task ends when counting 49.";
-        timer.PeriodicTask(10, [&data, &completed]()->const bool{
+        std::cout<<"Periodic task ends when counting 49."<<std::endl;
+        timer.PeriodicTask(delay, [&data, &completed]()->const bool{
             std::cout<<"Count down "<<data++<<"/49"<<std::endl;
             if(data < 50)
             {
@@ -64,7 +65,7 @@ int main()
         SingleShotTimer<1, 1> timer;
         uint32_t data = 0;
         volatile bool completed = false;
-        std::cout<<"Periodic task with random delay ends when counting 49.";
+        std::cout<<"Periodic task with random delay ends when counting 49."<<std::endl;
         timer.PeriodicTaskAdv([&data, &completed]()->const std::tuple<bool, uint32_t, uint32_t>{
             std::cout<<"Count down "<<data++<<"/49"<<std::endl;
             if(data < 50)

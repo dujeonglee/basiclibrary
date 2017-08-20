@@ -10,7 +10,7 @@
 #include <queue>                // std::queue
 #include <vector>               // std::vector
 
-template <unsigned long PRIORITY_LEVEL, unsigned long INITIAL_THREADS>
+template <const uint32_t PRIORITY_LEVEL, const uint32_t INITIAL_THREADS>
 class ThreadPool
 {
 private:
@@ -30,10 +30,11 @@ private:
     std::condition_variable m_Condition;
 
     // Number of workers
-    std::atomic< size_t > m_Workers;
+    std::atomic< uint32_t > m_Workers;
+
 
     // Number of active workers, i.e., currently serving tasks.
-    std::atomic< size_t > m_ActiveWorkers;
+    std::atomic< uint32_t > m_ActiveWorkers;
 
     // API call synchronization among applications.
     std::mutex m_APILock;
@@ -55,7 +56,7 @@ private:
                     {
                         self->m_Condition.wait(TaskQueueLock);
                     }
-                    for(unsigned long priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
+                    for(uint32_t priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
                     {
                         if(!self->m_TaskQueue[priority].empty())
                         {
@@ -96,7 +97,7 @@ private:
                 m_Condition.notify_one();
                 return;
             }
-            catch(std::bad_alloc& ex)
+            catch(const std::bad_alloc& ex)
             {
                 std::cout<<ex.what()<<std::endl;
             }
@@ -116,7 +117,7 @@ public:
 
     bool ShouldWakeup()
     {
-        for(unsigned long i = 0 ; i < PRIORITY_LEVEL ; i++)
+        for(uint32_t i = 0 ; i < PRIORITY_LEVEL ; i++)
         {
             if(!m_TaskQueue[i].empty())
             {
@@ -126,22 +127,16 @@ public:
         return false;
     }
 
-    size_t ResizeWorkerQueue(const size_t size)
+    uint32_t SetNumberOfWorkers(const uint32_t size)
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
-        if(size == 0)
-        {
-            // Invalid size
-            // Return current size
-            return m_Workers;
-        }
-        if(size == m_Workers)
+        if(size == 0 || size == m_Workers)
         {
             return m_Workers;
         }
         if(size > m_Workers)
         {
-            const size_t hire = size - m_Workers;
+            const uint32_t hire = size - m_Workers;
             for(uint32_t i = 0 ; i < hire ; i++)
             {
                 HireWorker();
@@ -149,7 +144,7 @@ public:
         }
         else
         {
-            const size_t fire = m_Workers - size;
+            const uint32_t fire = m_Workers - size;
             for(uint32_t i = 0 ; i < fire ; i++)
             {
                 FireWorker();
@@ -162,7 +157,7 @@ public:
         return m_Workers;
     }
 
-    bool Enqueue(const std::function<void()> task, const unsigned long priority = 0)
+    bool Enqueue(const std::function<void()> task, const uint32_t priority = 0)
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
         if(m_State == STOPPED)
@@ -184,7 +179,7 @@ public:
                 m_TaskQueue[priority].push(task);
                 m_Condition.notify_one();
             }
-            catch(std::bad_alloc& ex)
+            catch(const std::bad_alloc& ex)
             {
                 std::cout<<ex.what()<<std::endl;
                 return false;
@@ -193,13 +188,13 @@ public:
         return true;
     }
 
-    size_t Tasks()
+    uint32_t Tasks()
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
-        size_t ret = 0;
+        uint32_t ret = 0;
         {
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
-            for(size_t i = 0 ; i < m_TaskQueue.size() ; i++)
+            for(uint32_t i = 0 ; i < m_TaskQueue.size() ; i++)
             {
                 ret += m_TaskQueue[i].size();
             }
@@ -207,10 +202,10 @@ public:
         return ret;
     }
 
-    size_t Tasks(const unsigned long priority)
+    uint32_t Tasks(const uint32_t priority)
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
-        size_t ret = 0;
+        uint32_t ret = 0;
         if(priority >= PRIORITY_LEVEL)
         {
             return 0;
@@ -222,7 +217,7 @@ public:
         return ret;
     }
 
-    size_t ActiveWorkers()
+    uint32_t ActiveWorkers()
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
         return m_ActiveWorkers;
@@ -248,7 +243,7 @@ public:
             {
                 m_TaskQueue.resize((PRIORITY_LEVEL>1?PRIORITY_LEVEL:1));
             }
-            catch(std::bad_alloc& ex)
+            catch(const std::bad_alloc& ex)
             {
                 std::cout<<ex.what()<<std::endl;
             }
@@ -276,13 +271,13 @@ public:
         }
         m_State = STOPPED;
 
-        const size_t currentworkers = m_Workers;
+        const uint32_t currentworkers = m_Workers;
         {
             std::queue< std::function< void() > > empty;
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
             std::swap(m_TaskQueue[0], empty);
         }
-        for(size_t i = 0 ; i < currentworkers ; i++)
+        for(uint32_t i = 0 ; i < currentworkers ; i++)
         {
             FireWorker();
         }

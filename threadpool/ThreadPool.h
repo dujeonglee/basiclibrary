@@ -267,15 +267,10 @@ public:
         }
         m_State = STOPPED;
 
-        const size_t currentworkers = m_Workers;
-        {
-            std::queue< std::function< void() > > empty;
-            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
-            std::swap(m_TaskQueue[0], empty);
-        }
-        for(size_t i = 0 ; i < currentworkers ; i++)
+        do
         {
             FireWorker();
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
         while(m_Workers > 0);
 

@@ -230,6 +230,11 @@ public:
 
     void Start()
     {
+        Start((INITIAL_THREADS>1?INITIAL_THREADS:1));
+    }
+
+    void Start(const uint32_t workers)
+    {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
         if(m_State == POOL_STATE::STARTED)
         {
@@ -250,12 +255,16 @@ public:
         }
 
         // 2. Create workers
+        m_ActiveWorkers = 0;
         m_Workers = 0;
-        for(unsigned int i = 0 ; i < (INITIAL_THREADS>1?INITIAL_THREADS:1) ; i++)
+        for(unsigned int i = 0 ; i < workers ; i++)
         {
             HireWorker();
         }
-        m_ActiveWorkers = 0;
+        while(m_Workers != workers)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        };
     }
 
     void Stop()
@@ -267,12 +276,20 @@ public:
         }
         m_State = STOPPED;
 
-        do
+        const size_t currentworkers = m_Workers;
+        {
+            std::queue< std::function< void() > > empty;
+            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
+            std::swap(m_TaskQueue[0], empty);
+        }
+        for(size_t i = 0 ; i < currentworkers ; i++)
         {
             FireWorker();
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
         while(m_Workers > 0);
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
 
         {
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);

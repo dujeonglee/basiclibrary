@@ -36,7 +36,7 @@ private:
 private:
     bool ShouldWakeup()
     {
-        for(uint32_t i = 0 ; i < PRIORITY_LEVEL ; i++)
+        for(uint32_t i = 0 ; i < m_TaskQueue.size() ; i++)
         {
             if(m_TaskQueue[i].size() > 0)
             {
@@ -61,7 +61,7 @@ private:
                     {
                         self->m_Condition.wait(TaskQueueLock);
                     }
-                    for(uint32_t priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
+                    for(uint32_t priority = 0 ; priority < self->m_TaskQueue.size() ; priority++)
                     {
                         if(self->m_TaskQueue[priority].size() > 0)
                         {
@@ -212,16 +212,16 @@ public:
         {
             return false;
         }
-        if(priority >= PRIORITY_LEVEL)
-        {
-            return false;
-        }
         if(task == nullptr)
         {
             return false;
         }
         {
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
+            if(priority >= m_TaskQueue.size())
+            {
+                return false;
+            }
             try
             {
                 m_TaskQueue[priority].push_back(task);
@@ -253,16 +253,14 @@ public:
     uint32_t Tasks(const uint32_t priority)
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
-        uint32_t ret = 0;
-        if(priority >= PRIORITY_LEVEL)
-        {
-            return 0;
-        }
         {
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
-            ret = m_TaskQueue[priority].size();
+            if(priority >= m_TaskQueue.size())
+            {
+                return 0;
+            }
+            return m_TaskQueue[priority].size();
         }
-        return ret;
     }
 };
 

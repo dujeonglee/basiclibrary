@@ -27,6 +27,8 @@ private:
     std::condition_variable m_Condition;
     std::vector< std::deque < std::function<void()> > > m_TaskQueue;
 
+    uint32_t m_Priorities;
+
     // Number of workers
     uint32_t m_Workers;
     std::atomic< uint32_t > m_ActualWorkers;
@@ -108,7 +110,10 @@ private:
         while (1);
     }
 public:
-    ThreadPool() : m_State(STOPPED), m_Workers((INITIAL_THREADS>1?INITIAL_THREADS:1))
+    ThreadPool() : 
+    m_State(STOPPED), 
+    m_Priorities(PRIORITY_LEVEL>1?PRIORITY_LEVEL:1), 
+    m_Workers((INITIAL_THREADS>1?INITIAL_THREADS:1))
     {
         m_ActualWorkers = 0;
         Start();
@@ -131,12 +136,14 @@ public:
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
             try
             {
-                m_TaskQueue.resize((PRIORITY_LEVEL>1?PRIORITY_LEVEL:1));
+                m_TaskQueue.resize(m_Priorities);
             }
             catch(const std::bad_alloc& ex)
             {
                 std::cout<<ex.what()<<std::endl;
+                m_Priorities = m_TaskQueue.size();
             }
+
         }
 
         // 2. Create workers
@@ -173,13 +180,41 @@ public:
         m_State = STOPPED;
     }
 
+    uint32_t SetPriorities(const uint32_t size)
+    {
+        std::unique_lock<std::mutex> ApiLock(m_APILock);
+        if(m_State == STOPPED)
+        {
+            m_Priorities = size;
+            return m_Priorities;
+        }
+        if(size == 0 || size == m_Priorities)
+        {
+            return m_Priorities;
+        }
+        else
+        {
+            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
+            try
+            {
+                m_TaskQueue.resize(m_Priorities);
+                m_Priorities = size;
+            }
+            catch(const std::bad_alloc& ex)
+            {
+                std::cout<<ex.what()<<std::endl;
+            }
+            return m_Priorities;
+        }
+    }
+
     uint32_t SetWorkers(const uint32_t size)
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
         if(m_State == STOPPED)
         {
             m_Workers = size;
-            return;
+            return m_Workers;
         }
         if(size == 0 || size == m_Workers)
         {

@@ -30,23 +30,30 @@ private:
     std::condition_variable m_Condition;
 
     // Number of workers
-    std::atomic< uint32_t > m_Workers;
-
-
-    // Number of active workers, i.e., currently serving tasks.
-    std::atomic< uint32_t > m_ActiveWorkers;
+    uint32_t m_Workers;
+    std::atomic< uint32_t > m_ActualWorkers;
 
     // API call synchronization among applications.
     std::mutex m_APILock;
 private:
+    bool ShouldWakeup()
+    {
+        for(uint32_t i = 0 ; i < PRIORITY_LEVEL ; i++)
+        {
+            if(!m_TaskQueue[i].empty())
+            {
+                return true;
+            }
+        }
+        return false;
+    }    // Create one thread.
 
-    // Create one thread.
     void HireWorker()
     {
         ThreadPool * const self = this;
         std::thread Worker = std::thread([self]()
         {
-            self->m_Workers++;
+            self->m_ActualWorkers++;
             for(;;)
             {
                 std::function<void()> task = nullptr;
@@ -68,9 +75,7 @@ private:
                 }
                 if(task)
                 {
-                    self->m_ActiveWorkers++;
                     task();
-                    self->m_ActiveWorkers--;
                     std::this_thread::sleep_for(std::chrono::milliseconds(0));
                 }
                 else
@@ -80,7 +85,7 @@ private:
                     break;
                 }
             }
-            self->m_Workers--;
+            self->m_ActualWorkers--;
         });
         Worker.detach();
     }
@@ -105,8 +110,9 @@ private:
         while (1);
     }
 public:
-    ThreadPool() : m_State(STOPPED)
+    ThreadPool() : m_State(STOPPED), m_Workers((INITIAL_THREADS>1?INITIAL_THREADS:1))
     {
+        m_ActualWorkers = 0;
         Start();
     }
 
@@ -115,19 +121,68 @@ public:
         Stop();
     }
 
-    bool ShouldWakeup()
+    void Start()
     {
-        for(uint32_t i = 0 ; i < PRIORITY_LEVEL ; i++)
+        std::unique_lock<std::mutex> ApiLock(m_APILock);
+        if(m_State == POOL_STATE::STARTED)
         {
-            if(!m_TaskQueue[i].empty())
+            return;
+        }
+        m_State = POOL_STATE::STARTED;
+        // 1. Create TaskQueue
+        {
+            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
+            try
             {
-                return true;
+                m_TaskQueue.resize((PRIORITY_LEVEL>1?PRIORITY_LEVEL:1));
+            }
+            catch(const std::bad_alloc& ex)
+            {
+                std::cout<<ex.what()<<std::endl;
             }
         }
-        return false;
+
+        // 2. Create workers
+        for(unsigned int i = 0 ; i < m_Workers ; i++)
+        {
+            HireWorker();
+        }
+        while(m_ActualWorkers != m_Workers)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        };
     }
 
-    uint32_t SetNumberOfWorkers(const uint32_t size)
+    void Stop()
+    {
+        std::unique_lock<std::mutex> ApiLock(m_APILock);
+        if(m_State == STOPPED)
+        {
+            return;
+        }
+        m_State = STOPPED;
+
+        {
+            std::queue< std::function< void() > > empty;
+            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
+            std::swap(m_TaskQueue[0], empty);
+        }
+        for(uint32_t i = 0 ; i < m_Workers ; i++)
+        {
+            FireWorker();
+        }
+        while(m_ActualWorkers > 0);
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        {
+            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
+            m_TaskQueue.clear();
+        }
+    }
+
+    uint32_t SetWorkers(const uint32_t size)
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
         if(size == 0 || size == m_Workers)
@@ -141,6 +196,7 @@ public:
             {
                 HireWorker();
             }
+            m_Workers += hire;
         }
         else
         {
@@ -149,8 +205,9 @@ public:
             {
                 FireWorker();
             }
+            m_Workers -= fire;
         }
-        while(m_Workers != size)
+        while(m_ActualWorkers != m_Workers)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         };
@@ -215,81 +272,6 @@ public:
             ret = m_TaskQueue[priority].size();
         }
         return ret;
-    }
-
-    uint32_t ActiveWorkers()
-    {
-        std::unique_lock<std::mutex> ApiLock(m_APILock);
-        return m_ActiveWorkers;
-    }
-
-    void Start()
-    {
-        Start((INITIAL_THREADS>1?INITIAL_THREADS:1));
-    }
-
-    void Start(const uint32_t workers)
-    {
-        std::unique_lock<std::mutex> ApiLock(m_APILock);
-        if(m_State == POOL_STATE::STARTED)
-        {
-            return;
-        }
-        m_State = POOL_STATE::STARTED;
-        // 1. Create TaskQueue
-        {
-            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
-            try
-            {
-                m_TaskQueue.resize((PRIORITY_LEVEL>1?PRIORITY_LEVEL:1));
-            }
-            catch(const std::bad_alloc& ex)
-            {
-                std::cout<<ex.what()<<std::endl;
-            }
-        }
-
-        // 2. Create workers
-        m_ActiveWorkers = 0;
-        m_Workers = 0;
-        for(unsigned int i = 0 ; i < workers ; i++)
-        {
-            HireWorker();
-        }
-        while(m_Workers != workers)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        };
-    }
-
-    void Stop()
-    {
-        std::unique_lock<std::mutex> ApiLock(m_APILock);
-        if(m_State == STOPPED)
-        {
-            return;
-        }
-        m_State = STOPPED;
-
-        const uint32_t currentworkers = m_Workers;
-        {
-            std::queue< std::function< void() > > empty;
-            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
-            std::swap(m_TaskQueue[0], empty);
-        }
-        for(uint32_t i = 0 ; i < currentworkers ; i++)
-        {
-            FireWorker();
-        }
-        while(m_Workers > 0);
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
-
-        {
-            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
-            m_TaskQueue.clear();
-        }
     }
 };
 

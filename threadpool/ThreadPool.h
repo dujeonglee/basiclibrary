@@ -7,7 +7,7 @@
 #include <iostream>             // std::cout
 #include <mutex>                // std::mutex, std::unique_lock
 #include <thread>               // std::thread
-#include <queue>                // std::queue
+#include <deque>                // std::queue
 #include <vector>               // std::vector
 
 template <const uint32_t PRIORITY_LEVEL, const uint32_t INITIAL_THREADS>
@@ -23,11 +23,9 @@ private:
     POOL_STATE m_State;
 
     // Task list
-    std::vector< std::queue < std::function<void()> > > m_TaskQueue;
-
-    // Synchronization of m_TaskQueue
     std::mutex m_TaskQueueLock;
     std::condition_variable m_Condition;
+    std::vector< std::deque < std::function<void()> > > m_TaskQueue;
 
     // Number of workers
     uint32_t m_Workers;
@@ -40,7 +38,7 @@ private:
     {
         for(uint32_t i = 0 ; i < PRIORITY_LEVEL ; i++)
         {
-            if(!m_TaskQueue[i].empty())
+            if(m_TaskQueue[i].size() > 0)
             {
                 return true;
             }
@@ -65,10 +63,10 @@ private:
                     }
                     for(uint32_t priority = 0 ; priority < PRIORITY_LEVEL ; priority++)
                     {
-                        if(!self->m_TaskQueue[priority].empty())
+                        if(self->m_TaskQueue[priority].size() > 0)
                         {
                             task = std::move(self->m_TaskQueue[priority].front());
-                            self->m_TaskQueue[priority].pop();
+                            self->m_TaskQueue[priority].pop_front();
                             break;
                         }
                     }
@@ -98,7 +96,7 @@ private:
         {
             try
             {
-                m_TaskQueue[0].push(nullptr);
+                m_TaskQueue[0].push_front(nullptr);
                 m_Condition.notify_one();
                 return;
             }
@@ -159,11 +157,6 @@ public:
         if(m_State == STOPPED)
         {
             return;
-        }
-        {
-            std::queue< std::function< void() > > empty;
-            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
-            std::swap(m_TaskQueue[0], empty);
         }
         for(uint32_t i = 0 ; i < m_Workers ; i++)
         {
@@ -231,7 +224,7 @@ public:
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
             try
             {
-                m_TaskQueue[priority].push(task);
+                m_TaskQueue[priority].push_back(task);
                 m_Condition.notify_one();
             }
             catch(const std::bad_alloc& ex)

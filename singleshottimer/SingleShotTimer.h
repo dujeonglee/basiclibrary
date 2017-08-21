@@ -305,11 +305,15 @@ private:
 public:
     void PeriodicTask(const uint32_t interval, const std::function<const bool(void)> task, const uint32_t priority = 0)
     {
-        SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapper(this, interval, task, priority);
+        ImmediateTaskNoExcept([this, interval, task, priority](){
+            SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapper(this, interval, task, priority);
+        });
     }
     void PeriodicTaskAdv(const std::function<const std::tuple<bool, uint32_t, uint32_t>(void)> task)
     {
-        SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapperAdv(this, task);
+        ImmediateTaskNoExcept([this, task](){
+            SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapperAdv(this, task);
+        });
     }
 };
 

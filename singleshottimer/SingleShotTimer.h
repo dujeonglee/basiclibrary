@@ -307,13 +307,13 @@ public:
     {
         ImmediateTaskNoExcept([this, interval, task, priority](){
             SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapper(this, interval, task, priority);
-        });
+        }, priority);
     }
-    void PeriodicTaskAdv(const std::function<const std::tuple<bool, uint32_t, uint32_t>(void)> task)
+    void PeriodicTaskAdv(const std::function<const std::tuple<bool, uint32_t, uint32_t>(void)> task, const uint32_t priority = 0)
     {
         ImmediateTaskNoExcept([this, task](){
             SingleShotTimer<PRIORITY, CONCURRENCY>::PeriodicTaskWrapperAdv(this, task);
-        });
+        }, priority);
     }
 };
 

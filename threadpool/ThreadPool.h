@@ -27,6 +27,7 @@ private:
     std::condition_variable m_Condition;
     std::vector< std::deque < std::function<void()> > > m_TaskQueue;
 
+    // Priority levels
     uint32_t m_Priorities;
 
     // Number of workers
@@ -134,16 +135,18 @@ public:
         // 1. Create TaskQueue
         {
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
-            try
+            do
             {
-                m_TaskQueue.resize(m_Priorities);
+                try
+                {
+                    m_TaskQueue.resize(m_Priorities);
+                }
+                catch(const std::bad_alloc& ex)
+                {
+                    std::cout<<ex.what()<<std::endl;
+                }
             }
-            catch(const std::bad_alloc& ex)
-            {
-                std::cout<<ex.what()<<std::endl;
-                m_Priorities = m_TaskQueue.size();
-            }
-
+            while(m_TaskQueue.size() != m_Priorities);
         }
 
         // 2. Create workers
@@ -197,7 +200,7 @@ public:
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
             try
             {
-                m_TaskQueue.resize(m_Priorities);
+                m_TaskQueue.resize(size);
                 m_Priorities = size;
             }
             catch(const std::bad_alloc& ex)

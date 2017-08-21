@@ -176,6 +176,11 @@ public:
     uint32_t SetWorkers(const uint32_t size)
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
+        if(m_State == STOPPED)
+        {
+            m_Workers = size;
+            return;
+        }
         if(size == 0 || size == m_Workers)
         {
             return m_Workers;

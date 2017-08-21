@@ -128,7 +128,6 @@ public:
         {
             return;
         }
-        m_State = POOL_STATE::STARTED;
         // 1. Create TaskQueue
         {
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
@@ -151,6 +150,7 @@ public:
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         };
+        m_State = POOL_STATE::STARTED;
     }
 
     void Stop()
@@ -160,8 +160,6 @@ public:
         {
             return;
         }
-        m_State = STOPPED;
-
         {
             std::queue< std::function< void() > > empty;
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
@@ -175,11 +173,11 @@ public:
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
-
         {
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
             m_TaskQueue.clear();
         }
+        m_State = STOPPED;
     }
 
     uint32_t SetWorkers(const uint32_t size)

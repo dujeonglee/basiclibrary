@@ -58,7 +58,7 @@ private:
     void HireWorker()
     {
         ThreadPool * const self = this;
-        std::thread Worker = std::thread([self]()
+        std::thread([self]()
         {
             self->m_ActualWorkers++;
             for(;;)
@@ -93,8 +93,7 @@ private:
                 }
             }
             self->m_ActualWorkers--;
-        });
-        Worker.detach();
+        }).detach();
     }
 
     // Fire one thread

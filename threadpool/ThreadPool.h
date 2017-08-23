@@ -1,6 +1,8 @@
 #ifndef _THREAD_POOL_H_
 #define _THREAD_POOL_H_
 
+#include <cstdlib>              // std::exit
+
 #include <atomic>               // std::atomic
 #include <condition_variable>   // std::condition_variable
 #include <functional>           // std::function
@@ -58,42 +60,50 @@ private:
     void HireWorker()
     {
         ThreadPool * const self = this;
-        std::thread([self]()
+        try
         {
-            self->m_ActualWorkers++;
-            for(;;)
+            std::thread([self]()
             {
-                std::function<void()> task = nullptr;
+                self->m_ActualWorkers++;
+                for(;;)
                 {
-                    std::unique_lock<std::mutex> TaskQueueLock(self->m_TaskQueueLock);
-                    while(!self->ShouldWakeup())
+                    std::function<void()> task = nullptr;
                     {
-                        self->m_Condition.wait(TaskQueueLock);
-                    }
-                    for(uint32_t priority = 0 ; priority < self->m_TaskQueue.size() ; priority++)
-                    {
-                        if(self->m_TaskQueue[priority].size() > 0)
+                        std::unique_lock<std::mutex> TaskQueueLock(self->m_TaskQueueLock);
+                        while(!self->ShouldWakeup())
                         {
-                            task = std::move(self->m_TaskQueue[priority].front());
-                            self->m_TaskQueue[priority].pop_front();
-                            break;
+                            self->m_Condition.wait(TaskQueueLock);
+                        }
+                        for(uint32_t priority = 0 ; priority < self->m_TaskQueue.size() ; priority++)
+                        {
+                            if(self->m_TaskQueue[priority].size() > 0)
+                            {
+                                task = std::move(self->m_TaskQueue[priority].front());
+                                self->m_TaskQueue[priority].pop_front();
+                                break;
+                            }
                         }
                     }
+                    if(task)
+                    {
+                        task();
+                        std::this_thread::sleep_for(std::chrono::milliseconds(0));
+                    }
+                    else
+                    {
+                        // "null task" is used as a fire worker signal.
+                        // Any threads getting "null task" will exit the loop.
+                        break;
+                    }
                 }
-                if(task)
-                {
-                    task();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(0));
-                }
-                else
-                {
-                    // "null task" is used as a fire worker signal.
-                    // Any threads getting "null task" will exit the loop.
-                    break;
-                }
-            }
-            self->m_ActualWorkers--;
-        }).detach();
+                self->m_ActualWorkers--;
+            }).detach();
+        }
+        catch (const std::system_error& ex)
+        {
+            std::cout<<ex.what()<<std::endl;
+            std::exit(EXIT_FAILURE);
+        }
     }
 
     // Fire one thread

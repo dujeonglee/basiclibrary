@@ -180,6 +180,9 @@ public:
     }
 
     // Send kill signal (= nullptr) to worker threads and purge all task queues.
+    // Caution: If "Stop" is scheduled using "Enqueue" for service, "Stop" is going to never 
+    // returned because a worker serving "Stop" will wait until all workers are fired including it self.
+    // Use "StopAsync" and callback function in such cases.
     void Stop()
     {
         std::unique_lock<std::mutex> ApiLock(m_APILock);
@@ -200,6 +203,40 @@ public:
             m_TaskQueue.clear();
         }
         m_State = STOPPED;
+    }
+
+    // Fire all workers and purge all task queues asynchronously.
+    void StopAsync(const std::function<void(void)> callback)
+    {
+        ThreadPool* const self = this;
+        std::thread([self, callback](){
+            std::unique_lock<std::mutex> ApiLock(self->m_APILock);
+            if(self->m_State == STOPPED)
+            {
+                if(callback)
+                {
+                    callback();
+                }
+                return;
+            }
+            for(uint32_t i = 0 ; i < self->m_Workers ; i++)
+            {
+                self->FireWorker();
+            }
+            while(self->m_ActualWorkers > 0);
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+            {
+                std::unique_lock<std::mutex> TaskQueueLock(self->m_TaskQueueLock);
+                self->m_TaskQueue.clear();
+            }
+            self->m_State = STOPPED;
+            if(callback)
+            {
+                callback();
+            }
+        }).detach();
     }
 
     // Change priority levels of task queues.

@@ -180,8 +180,9 @@ public:
     }
 
     // Send kill signal (= nullptr) to worker threads and purge all task queues.
-    // Caution: If "Stop" is scheduled using "Enqueue" for service, "Stop" is going to never 
-    // be returned because "Stop" waits until all of the work threads are fired including the thread executing the "Stop".
+    // Caution: If any tasks calling "Stop" inside are scheduled for service using Enqueue,
+    // "Stop" is going to never be returned.
+    // Because In "Stop" the thread waits until all of the the threads retire including itself.
     // Use "StopAsync" and callback function in such cases.
     void Stop()
     {

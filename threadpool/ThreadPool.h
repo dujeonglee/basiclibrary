@@ -207,7 +207,7 @@ public:
     }
 
     // Fire all workers and purge all task queues asynchronously.
-    void StopAsync(const std::function<void(void)> callback)
+    void StopAsync(const std::function<void(void)> callback = nullptr)
     {
         ThreadPool* const self = this;
         std::thread([self, callback](){

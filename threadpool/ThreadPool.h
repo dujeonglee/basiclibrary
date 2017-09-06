@@ -191,8 +191,7 @@ class ThreadPool
         {
             FireWorker();
         }
-        while (m_ActualWorkers > 0)
-            ;
+        while (m_ActualWorkers > 0);
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
@@ -221,8 +220,7 @@ class ThreadPool
             {
                 self->FireWorker();
             }
-            while (self->m_ActualWorkers > 0)
-                ;
+            while (self->m_ActualWorkers > 0);
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }

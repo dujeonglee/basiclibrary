@@ -1,5 +1,6 @@
 #ifndef SINGLESHOTTIMER_H_
 #define SINGLESHOTTIMER_H_
+
 #include <chrono>
 #include <ctime>
 #include <algorithm>
@@ -8,20 +9,20 @@
 //#define BUSYWAITING
 
 #ifdef __linux__
-    // Linux platform
-    #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-    #if GCC_VERSION >= 40800
-        typedef std::chrono::steady_clock CLOCK;
-    #else
-        typedef std::chrono::monotonic_clock CLOCK;
-    #endif
+// Linux platform
+#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#if GCC_VERSION >= 40800
+typedef std::chrono::steady_clock CLOCK;
+#else
+typedef std::chrono::monotonic_clock CLOCK;
+#endif
 
 #elif _WIN32
-    // Windows platform
-    typedef std::chrono::steady_clock CLOCK;
+// Windows platform
+typedef std::chrono::steady_clock CLOCK;
 #else
-    // Other platforms
-    typedef std::chrono::steady_clock CLOCK;
+// Other platforms
+typedef std::chrono::steady_clock CLOCK;
 #endif
 
 typedef std::chrono::time_point<CLOCK> TimePoint;
@@ -29,11 +30,11 @@ typedef std::chrono::time_point<CLOCK> TimePoint;
 // Task information.
 class TaskInformation
 {
-public:
+  public:
     // When to execute 'm_Task'.
     TimePoint m_ExecutionTime;
     // Task for execution.
-    std::function <void()> m_Task;
+    std::function<void()> m_Task;
     // Priority
     uint32_t m_Priority;
     // TaskID used to cancel the task.
@@ -45,7 +46,7 @@ public:
 template <uint32_t PRIORITY, uint32_t THREAD>
 class SingleShotTimer
 {
-private:
+  private:
     // Synchronization of API calls among applications
     std::mutex m_APILock;
 
@@ -54,23 +55,22 @@ private:
     // Condition variable to wake up 'm_Thread'. The signal is generated around task's execution time.
     std::condition_variable m_Condition;
     // A list of tasks
-    std::vector<TaskInformation*> m_ActiveTaskInformationList;
+    std::vector<TaskInformation *> m_ActiveTaskInformationList;
     // Main loop checking execution timeof tasks.
     std::thread m_Thread;
     // When a task reaches to its execution time, the task is pushed into 'm_ThreadPool' by 'm_Thread'.
     ThreadPool<PRIORITY, THREAD> m_ThreadPool;
-    // The state of SingleShotTimer. 
+    // The state of SingleShotTimer.
     std::atomic<bool> m_Running;
     // Generate unique TaskID
     uint32_t m_TaskID;
-#define INVALID_TASK_ID    ((uint32_t)0)
-#define IMMEDIATE_TASK_ID  ((uint32_t)1)
-#define MINIMUM_TASK_ID    ((uint32_t)2)
-public:
+#define INVALID_TASK_ID ((uint32_t)0)
+#define IMMEDIATE_TASK_ID ((uint32_t)1)
+#define MINIMUM_TASK_ID ((uint32_t)2)
+  public:
     // Ctor. Initialize member variables and call 'Start'
-    SingleShotTimer():
-    m_Running(false),
-    m_TaskID(MINIMUM_TASK_ID)
+    SingleShotTimer() : m_Running(false),
+                        m_TaskID(MINIMUM_TASK_ID)
     {
         Start();
     }
@@ -82,7 +82,7 @@ public:
     }
 
     // Schedule a task being executed immediately with priority.
-    uint32_t ImmediateTaskNoExcept(const std::function <void()> to, const uint32_t priority = 0)
+    uint32_t ImmediateTaskNoExcept(const std::function<void()> to, const uint32_t priority = 0)
     {
         uint32_t ret = INVALID_TASK_ID;
         while (ret == INVALID_TASK_ID && m_Running)
@@ -93,7 +93,7 @@ public:
     }
 
     // Schedule a task being executed after milli with priority.
-    uint32_t ScheduleTaskNoExcept(const uint32_t milli, const std::function <void()> to, const uint32_t priority = 0)
+    uint32_t ScheduleTaskNoExcept(const uint32_t milli, const std::function<void()> to, const uint32_t priority = 0)
     {
         uint32_t ret = INVALID_TASK_ID;
         while (ret == INVALID_TASK_ID && m_Running)
@@ -105,14 +105,14 @@ public:
 
     // Schedule a task being executed immediately with priority.
     // This function may fail.
-    uint32_t ImmediateTask(const std::function <void()> to, const uint32_t priority = 0)
+    uint32_t ImmediateTask(const std::function<void()> to, const uint32_t priority = 0)
     {
         return ScheduleTask(0, to, priority);
     }
 
     // Schedule a task being executed after milli with priority.
     // This function may fail.
-    uint32_t ScheduleTask(const uint32_t milli, const std::function <void()> to, const uint32_t priority = 0)
+    uint32_t ScheduleTask(const uint32_t milli, const std::function<void()> to, const uint32_t priority = 0)
     {
         std::unique_lock<std::mutex> APILock(m_APILock);
         if (m_Running == false)
@@ -121,17 +121,15 @@ public:
         }
         if (milli == 0)
         {
-            return (m_ThreadPool.Enqueue([to]() {to(); }, priority) ?
-                        IMMEDIATE_TASK_ID :
-                        INVALID_TASK_ID); /*One cannot cancel immediate task*/
+            return (m_ThreadPool.Enqueue([to]() { to(); }, priority) ? IMMEDIATE_TASK_ID : INVALID_TASK_ID); /*One cannot cancel immediate task*/
         }
-        TaskInformation* newone = nullptr;
+        TaskInformation *newone = nullptr;
         // 1. Get a free TaskInformation
         try
         {
             newone = new TaskInformation();
         }
-        catch (const std::bad_alloc& ex)
+        catch (const std::bad_alloc &ex)
         {
             return INVALID_TASK_ID;
         }
@@ -153,13 +151,13 @@ public:
             {
                 m_ActiveTaskInformationList.push_back(newone);
             }
-            catch (std::bad_alloc& ex)
+            catch (std::bad_alloc &ex)
             {
                 std::cout << ex.what() << std::endl;
                 delete newone;
                 return INVALID_TASK_ID;
             }
-            std::push_heap(m_ActiveTaskInformationList.begin(), m_ActiveTaskInformationList.end(), [](TaskInformation* &a, TaskInformation* &b)->bool {
+            std::push_heap(m_ActiveTaskInformationList.begin(), m_ActiveTaskInformationList.end(), [](TaskInformation *&a, TaskInformation *&b) -> bool {
                 return a->m_ExecutionTime > b->m_ExecutionTime;
             });
         }
@@ -199,12 +197,11 @@ public:
             return;
         }
         m_ThreadPool.Start();
-        SingleShotTimer* const self = this;
-        m_Thread = std::thread([self]()
-        {
+        SingleShotTimer *const self = this;
+        m_Thread = std::thread([self]() {
             while (self->m_Running)
             {
-                TaskInformation* task = nullptr;
+                TaskInformation *task = nullptr;
                 {
                     std::unique_lock<std::mutex> ActiveTaskInformationListLock(self->m_ActiveTaskInformationListLock);
                     if (self->m_ActiveTaskInformationList.size() == 0)
@@ -221,7 +218,7 @@ public:
 #ifdef BUSYWAITING
                     if (self->m_ActiveTaskInformationList[0]->m_ExecutionTime <= CLOCK::now() && self->m_Running)
                     {
-                        std::pop_heap(self->m_ActiveTaskInformationList.begin(), self->m_ActiveTaskInformationList.end(), [](TaskInformation* &a, TaskInformation* &b)->bool {
+                        std::pop_heap(self->m_ActiveTaskInformationList.begin(), self->m_ActiveTaskInformationList.end(), [](TaskInformation *&a, TaskInformation *&b) -> bool {
                             return a->m_ExecutionTime > b->m_ExecutionTime;
                         });
                         task = self->m_ActiveTaskInformationList.back();
@@ -245,7 +242,7 @@ public:
                     {
                         return;
                     }
-                    std::pop_heap(self->m_ActiveTaskInformationList.begin(), self->m_ActiveTaskInformationList.end(), [](TaskInformation* &a, TaskInformation* &b)->bool {
+                    std::pop_heap(self->m_ActiveTaskInformationList.begin(), self->m_ActiveTaskInformationList.end(), [](TaskInformation *&a, TaskInformation *&b) -> bool {
                         return a->m_ExecutionTime > b->m_ExecutionTime;
                     });
                     task = self->m_ActiveTaskInformationList.back();
@@ -260,7 +257,8 @@ public:
                             task->m_Task();
                         }
                         delete task;
-                    }, task->m_Priority);
+                    },
+                                               task->m_Priority);
                 }
             }
         });
@@ -307,9 +305,9 @@ public:
         return m_Running;
     }
 
-private:
+  private:
     // Wrapper function used by 'PeriodicTask'
-    static void PeriodicTaskWrapper(SingleShotTimer<PRIORITY, THREAD>* const timer, const uint32_t interval, const std::function<const bool(void)> task, const uint32_t priority = 0)
+    static void PeriodicTaskWrapper(SingleShotTimer<PRIORITY, THREAD> *const timer, const uint32_t interval, const std::function<const bool(void)> task, const uint32_t priority = 0)
     {
         std::function<void()> wrapper = std::bind(SingleShotTimer<PRIORITY, THREAD>::PeriodicTaskWrapper, timer, interval, task, priority);
         if (task())
@@ -318,30 +316,32 @@ private:
         }
     }
     // Wrapper function used by 'PeriodicTaskAdv'
-    static void PeriodicTaskWrapperAdv(SingleShotTimer<PRIORITY, THREAD>* const timer, const std::function<const std::tuple<bool, uint32_t, uint32_t>(void)> task)
+    static void PeriodicTaskWrapperAdv(SingleShotTimer<PRIORITY, THREAD> *const timer, const std::function<const std::tuple<bool, uint32_t, uint32_t>(void)> task)
     {
         std::function<void()> wrapper = std::bind(SingleShotTimer<PRIORITY, THREAD>::PeriodicTaskWrapperAdv, timer, task);
         const std::tuple<bool, uint32_t, uint32_t> ret = task();
-        if(std::get<0>(ret))
+        if (std::get<0>(ret))
         {
             timer->ScheduleTaskNoExcept(std::get<1>(ret), wrapper, std::get<2>(ret));
         }
     }
 
-public:
+  public:
     // Start periodic task
     void PeriodicTask(const uint32_t interval, const std::function<const bool(void)> task, const uint32_t priority = 0)
     {
-        ImmediateTaskNoExcept([this, interval, task, priority](){
+        ImmediateTaskNoExcept([this, interval, task, priority]() {
             SingleShotTimer<PRIORITY, THREAD>::PeriodicTaskWrapper(this, interval, task, priority);
-        }, priority);
+        },
+                              priority);
     }
     // Start periodic task
     void PeriodicTaskAdv(const std::function<const std::tuple<bool, uint32_t, uint32_t>(void)> task, const uint32_t priority = 0)
     {
-        ImmediateTaskNoExcept([this, task](){
+        ImmediateTaskNoExcept([this, task]() {
             SingleShotTimer<PRIORITY, THREAD>::PeriodicTaskWrapperAdv(this, task);
-        }, priority);
+        },
+                              priority);
     }
 };
 

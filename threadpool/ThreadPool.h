@@ -207,28 +207,7 @@ class ThreadPool
     {
         ThreadPool *const self = this;
         std::thread([self, callback]() {
-            std::unique_lock<std::mutex> ApiLock(self->m_APILock);
-            if (self->m_State == STOPPED)
-            {
-                if (callback)
-                {
-                    callback();
-                }
-                return;
-            }
-            for (uint32_t i = 0; i < self->m_Workers; i++)
-            {
-                self->FireWorker();
-            }
-            while (self->m_ActualWorkers > 0)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
-            {
-                std::unique_lock<std::mutex> TaskQueueLock(self->m_TaskQueueLock);
-                self->m_TaskQueue.clear();
-            }
-            self->m_State = STOPPED;
+            self->Stop();
             if (callback)
             {
                 callback();

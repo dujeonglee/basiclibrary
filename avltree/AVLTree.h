@@ -6,8 +6,8 @@
  * DEBUG_FUNCTIONS : For debugging purpose
  */
 
-#define BALANCED_DELETION
-#define DEBUG_FUNCTIONS
+#define BALANCED_DELETION (1)
+#define DEBUG_FUNCTIONS (1)
 
 #include <exception>
 #include <functional>
@@ -249,7 +249,7 @@ class AVLTreeElement
         else
         {
             AVLTreeElement<KEY, DATA> *target;
-#ifdef BALANCED_DELETION
+#if BALANCED_DELETION
             if (m_BalanceFactor > 0)
 #else
             if (1)
@@ -289,7 +289,7 @@ class AVLTreeElement
                 }
                 target->m_Parent = m_Parent;
 
-#ifdef BALANCED_DELETION
+#if BALANCED_DELETION
                 if (m_BalanceFactor > 0)
 #else
                 if (1)
@@ -314,7 +314,7 @@ class AVLTreeElement
             {
                 adjustment_child = target;
                 adjustment_parent = target->m_Parent;
-#ifdef BALANCED_DELETION
+#if BALANCED_DELETION
                 if (m_BalanceFactor > 0)
 #else
                 if (1)
@@ -1005,7 +1005,7 @@ class AVLTree
             return GetRef(key);
         }
     }
-#ifdef DEBUG_FUNCTIONS
+#if DEBUG_FUNCTIONS
   public:
     void CheckTreeStructure(unsigned int &depth, bool &valid)
     {

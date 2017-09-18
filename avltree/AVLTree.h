@@ -159,7 +159,7 @@ inline bool less<std::string>(const std::string &key1, const std::string &key2) 
 template <>
 inline bool greater<std::string>(const std::string &key1, const std::string &key2) { return key1 > key2; }
 template <>
-inline bool equal<std::string>(const std::string &key1, const std::string &key2) { return key1 == key2; }
+inline bool equal<std::string>(const std::string &key1, const std::string &key2) { return key1.compare(key2) == 0; }
 template <>
 inline void copy<std::string>(std::string *const key1, const std::string *const key2) { *key1 = *key2; }
 

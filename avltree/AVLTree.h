@@ -155,9 +155,9 @@ inline void copy<wchar_t>(wchar_t *const key1, const wchar_t *const key2) { *key
 
 // For primitive type std::string
 template <>
-inline bool less<std::string>(const std::string &key1, const std::string &key2) { return key1 < key2; }
+inline bool less<std::string>(const std::string &key1, const std::string &key2) { return key1.compare(key2) < 0; }
 template <>
-inline bool greater<std::string>(const std::string &key1, const std::string &key2) { return key1 > key2; }
+inline bool greater<std::string>(const std::string &key1, const std::string &key2) {return key1.compare(key2) > 0; }
 template <>
 inline bool equal<std::string>(const std::string &key1, const std::string &key2) { return key1.compare(key2) == 0; }
 template <>

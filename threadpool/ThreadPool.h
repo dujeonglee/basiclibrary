@@ -10,6 +10,7 @@
 #include <thread>             // std::thread
 #include <deque>              // std::queue
 #include <vector>             // std::vector
+#include <set>                // std::set
 
 template <const uint32_t INITIAL_PRIORITY, const uint32_t INITIAL_THREAD>
 class ThreadPool
@@ -37,6 +38,8 @@ class ThreadPool
     uint32_t m_Workers;
     // Actual number of threads. 'HireWorker' increments 'm_ActualWorkers' by one, and 'FireWorker' decrements 'm_ActualWorkers' by one.
     std::atomic<uint32_t> m_ActualWorkers;
+    // Worker Set
+    std::set<std::thread::id> m_WorkerIDs;
 
     // API synchronization among applications.
     std::mutex m_APILock;
@@ -62,6 +65,10 @@ class ThreadPool
         try
         {
             std::thread([self]() {
+                {
+                    std::unique_lock<std::mutex> TaskQueueLock(self->m_TaskQueueLock);
+                    self->m_WorkerIDs.insert(std::this_thread::get_id());
+                }
                 self->m_ActualWorkers++;
                 for (;;)
                 {
@@ -95,6 +102,10 @@ class ThreadPool
                     }
                 }
                 self->m_ActualWorkers--;
+                {
+                    std::unique_lock<std::mutex> TaskQueueLock(self->m_TaskQueueLock);
+                    self->m_WorkerIDs.erase(std::this_thread::get_id());
+                }
             }).detach();
         }
         catch (const std::system_error &ex)
@@ -182,6 +193,14 @@ class ThreadPool
     // Use "StopAsync" and callback function in such cases.
     void Stop()
     {
+        {
+            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
+            if (m_WorkerIDs.find(std::this_thread::get_id()) != m_WorkerIDs.end())
+            {
+                StopAsync();
+                return;
+            }
+        }
         std::unique_lock<std::mutex> ApiLock(m_APILock);
         if (m_State == STOPPED)
         {

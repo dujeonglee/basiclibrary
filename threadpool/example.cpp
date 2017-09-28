@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     }
     std::cout << "--------------------------------------------------------------------" << std::endl;
     {
-        std::cout << "StopAsyn" << std::endl;
+        std::cout << "Stop" << std::endl;
         ThreadPool<1 /*Number of priority levels*/, 3 /*Number of threads*/> threadpool;
         for (unsigned int i = 0; i < 10; i++)
         {

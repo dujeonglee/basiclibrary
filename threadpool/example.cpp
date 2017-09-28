@@ -42,24 +42,24 @@ int main(int argc, char *argv[])
         }
         while(threadpool.Tasks());
     }
-    std::cout<<"--------------------------------------------------------------------"<<std::endl;
+    std::cout << "--------------------------------------------------------------------" << std::endl;
     {
-        std::cout<<"StopAsyn"<<std::endl;
-        ThreadPool<1/*Number of priority levels*/,3/*Number of threads*/> threadpool;
-        for(unsigned int i = 0 ; i < 10 ; i++)
+        std::cout << "StopAsyn" << std::endl;
+        ThreadPool<1 /*Number of priority levels*/, 3 /*Number of threads*/> threadpool;
+        for (unsigned int i = 0; i < 10; i++)
         {
-            threadpool.Enqueue([i, &threadpool](){
-                std::cout<<"Task "<<i<<std::endl;
+            threadpool.Enqueue([i, &threadpool]() {
+                std::cout << "Task " << i << std::endl;
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                if(i == 9)
-		{
-                    //threadpool.Stop(); // This leads to blocking process.
-                    threadpool.StopAsync(); // Instead, one must use StopAsync inside the task.
-		}
+                if (i == 9)
+                {
+                    threadpool.Stop();
+                }
             });
         }
-        while(threadpool.Tasks());
+        while (threadpool.Tasks())
+            ;
     }
-    std::cout<<"--------------------------------------------------------------------"<<std::endl;
+    std::cout << "--------------------------------------------------------------------" << std::endl;
     return 0;
 }

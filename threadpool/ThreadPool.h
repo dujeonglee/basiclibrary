@@ -40,6 +40,9 @@ class ThreadPool
     std::atomic<uint32_t> m_ActualWorkers;
     // Worker Set
     std::set<std::thread::id> m_WorkerIDs;
+    // Indicate if a worker called Stop.
+    // In such case the worker wait until m_ActualWorkers == 1.
+    std::atomic<bool> m_WorkerInStop;
 
     // API synchronization among applications.
     std::mutex m_APILock;
@@ -158,6 +161,7 @@ class ThreadPool
         {
             return;
         }
+        m_WorkerInStop = false;
         // 1. Create TaskQueue
         {
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
@@ -187,30 +191,31 @@ class ThreadPool
     }
 
     // Send kill signal (= nullptr) to worker threads and purge all task queues.
-    // Caution: If any tasks calling "Stop" inside are scheduled for service using Enqueue,
-    // "Stop" is going to never be returned.
-    // Because In "Stop" the thread waits until all of the the threads retire including itself.
-    // Use "StopAsync" and callback function in such cases.
     void Stop()
     {
+        bool locked = false;
+        while((locked = m_APILock.try_lock()) == false && m_State == STARTED)
         {
-            std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
-            if (m_WorkerIDs.find(std::this_thread::get_id()) != m_WorkerIDs.end())
-            {
-                StopAsync();
-                return;
-            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
-        std::unique_lock<std::mutex> ApiLock(m_APILock);
-        if (m_State == STOPPED)
-        {
+        if(locked == false){
             return;
         }
+        if (m_WorkerIDs.find(std::this_thread::get_id()) != m_WorkerIDs.end())
+        {
+            m_WorkerInStop = true;
+        }
+        if (m_State == STOPPED)
+        {
+            m_APILock.unlock();
+            return;
+        }
+        m_State = STOPPED;
         for (uint32_t i = 0; i < m_Workers; i++)
         {
             FireWorker();
         }
-        while (m_ActualWorkers > 0)
+        while (m_ActualWorkers > (m_WorkerInStop?1:0))
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
@@ -218,20 +223,8 @@ class ThreadPool
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
             m_TaskQueue.clear();
         }
-        m_State = STOPPED;
-    }
-
-    // Fire all workers and purge all task queues asynchronously.
-    void StopAsync(const std::function<void(void)> callback = nullptr)
-    {
-        ThreadPool *const self = this;
-        std::thread([self, callback]() {
-            self->Stop();
-            if (callback)
-            {
-                callback();
-            }
-        }).detach();
+        m_WorkerInStop = false;
+        m_APILock.unlock();
     }
 
     // Change priority levels of task queues.

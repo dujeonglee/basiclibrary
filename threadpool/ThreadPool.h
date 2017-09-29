@@ -194,11 +194,12 @@ class ThreadPool
     void Stop()
     {
         bool locked = false;
-        while((locked = m_APILock.try_lock()) == false && m_State == STARTED)
+        while ((locked = m_APILock.try_lock()) == false && m_State == STARTED)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
-        if(locked == false){
+        if (locked == false)
+        {
             return;
         }
         if (m_WorkerIDs.find(std::this_thread::get_id()) != m_WorkerIDs.end())
@@ -215,7 +216,7 @@ class ThreadPool
         {
             FireWorker();
         }
-        while (m_ActualWorkers > (m_WorkerInStop?1:0))
+        while (m_ActualWorkers > (m_WorkerInStop ? 1 : 0))
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }

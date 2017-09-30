@@ -3,7 +3,6 @@
 
 int main(int argc, char *argv[])
 {
-    #if 0
     std::cout<<"--------------------------------------------------------------------"<<std::endl;
     {
         std::cout<<"One thread"<<std::endl;
@@ -43,7 +42,6 @@ int main(int argc, char *argv[])
         }
         while(threadpool.Tasks());
     }
-    #endif
     std::cout << "--------------------------------------------------------------------" << std::endl;
     {
         std::cout << "Stop" << std::endl;

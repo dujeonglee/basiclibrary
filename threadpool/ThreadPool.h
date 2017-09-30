@@ -40,6 +40,9 @@ class ThreadPool
     std::atomic<uint32_t> m_ActualWorkers;
     // Worker Set
     std::set<std::thread::id> m_WorkerIDs;
+    // Indicate if a worker called Stop.
+    // In such case the worker wait until m_ActualWorkers == 1.
+    std::atomic<bool> m_WorkerInStop;
 
     // API synchronization among applications.
     std::mutex m_APILock;
@@ -158,6 +161,7 @@ class ThreadPool
         {
             return;
         }
+        m_WorkerInStop = false;
         // 1. Create TaskQueue
         {
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
@@ -198,7 +202,10 @@ class ThreadPool
         {
             return;
         }
-        const bool CALLED_BY_WORKER = (m_WorkerIDs.find(std::this_thread::get_id()) != m_WorkerIDs.end());
+        if (m_WorkerIDs.find(std::this_thread::get_id()) != m_WorkerIDs.end())
+        {
+            m_WorkerInStop = true;
+        }
         if (m_State == STOPPED)
         {
             m_APILock.unlock();
@@ -209,7 +216,7 @@ class ThreadPool
         {
             FireWorker();
         }
-        while (m_ActualWorkers > (CALLED_BY_WORKER ? 1 : 0))
+        while (m_ActualWorkers > (m_WorkerInStop ? 1 : 0))
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
@@ -217,6 +224,7 @@ class ThreadPool
             std::unique_lock<std::mutex> TaskQueueLock(m_TaskQueueLock);
             m_TaskQueue.clear();
         }
+        m_WorkerInStop = false;
         m_APILock.unlock();
     }
 

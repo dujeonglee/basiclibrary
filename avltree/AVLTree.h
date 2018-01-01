@@ -190,6 +190,8 @@ class AVLTreeElement
         {
             m_Tree->m_Head = this;
             m_Tree->m_Tail = this;
+            m_Prev = nullptr;
+            m_Next = nullptr;
         }
         else
         {

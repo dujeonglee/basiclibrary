@@ -599,22 +599,7 @@ class AVLTree
             AVLTreeElement<KEY, DATA> *grand_parent = nullptr;
             AVLTreeElement<KEY, DATA> *parent = m_Root;
             AVLTreeElement<KEY, DATA> *child = nullptr;
-            /*
-            while (
-                (
-                    (less<KEY>(key, parent->m_Key) && parent->m_Left == nullptr) ||
-                    (greater<KEY>(key, parent->m_Key) && parent->m_Right == nullptr) ||
-                    (equal<KEY>(key, parent->m_Key))) ==
-                false)
-            {
-                parent = (less<KEY>(key, parent->m_Key) ? parent->m_Left : parent->m_Right);
-            }
-            if (equal<KEY>(key, parent->m_Key))
-            {
-                return false;
-            }
-            else
-            */
+
             while (true)
             {
                 if (less<KEY>(key, parent->m_Key))
@@ -770,110 +755,132 @@ class AVLTree
             AVLTreeElement<KEY, DATA> *grand_parent = nullptr;
             AVLTreeElement<KEY, DATA> *parent = m_Root;
             AVLTreeElement<KEY, DATA> *child = nullptr;
-            while (
-                (
-                    (less<KEY>(key, parent->m_Key) && parent->m_Left == nullptr) ||
-                    (greater<KEY>(key, parent->m_Key) && parent->m_Right == nullptr) ||
-                    (equal<KEY>(key, parent->m_Key))) ==
-                false)
+            while (true)
             {
-                parent = (less<KEY>(key, parent->m_Key) ? parent->m_Left : parent->m_Right);
-            }
-            if (equal<KEY>(key, parent->m_Key))
-            {
-                return false;
-            }
-            else
-            {
-                try
+                if (less<KEY>(key, parent->m_Key))
                 {
-                    child = (less<KEY>(key, parent->m_Key) ? parent->m_Left : parent->m_Right) = new AVLTreeElement<KEY, DATA>(this);
-                }
-                catch (const std::bad_alloc &ex)
-                {
-                    child = (less<KEY>(key, parent->m_Key) ? parent->m_Left : parent->m_Right) = nullptr;
-                    return false;
-                }
-                copy<KEY>(&child->m_Key, &key);
-                child->m_Data = std::move(data);
-                child->m_Parent = parent;
-                while (parent != nullptr)
-                {
-                    parent->m_BalanceFactor += (parent->m_Left == child ? 1 : -1);
-                    if (parent->m_BalanceFactor == 2 || parent->m_BalanceFactor == -2 || parent->m_BalanceFactor == 0)
+                    if (parent->m_Left == nullptr)
                     {
+                        try
+                        {
+                            child = parent->m_Left = new AVLTreeElement<KEY, DATA>(this);
+                        }
+                        catch (const std::bad_alloc &ex)
+                        {
+                            child = parent->m_Left = nullptr;
+                            return false;
+                        }
                         break;
                     }
-                    child = parent;
-                    parent = parent->m_Parent;
+                    else
+                    {
+                        parent = parent->m_Left;
+                    }
                 }
-                if (parent && parent->m_BalanceFactor != 0)
+                else if (greater<KEY>(key, parent->m_Key))
                 {
-                    grand_parent = parent;
-                    parent = (grand_parent->m_BalanceFactor == 2 ? grand_parent->m_Left : grand_parent->m_Right);
-                    child = (parent->m_BalanceFactor == 1 ? parent->m_Left : parent->m_Right);
-                    if (grand_parent->m_Left == parent && parent->m_Right == child)
+                    if (parent->m_Right == nullptr)
                     {
-                        LeftRotation(parent, child);
-                        RightRotation(grand_parent, child);
-                        if (child->m_BalanceFactor == 0)
+                        try
                         {
-                            grand_parent->m_BalanceFactor = 0;
-                            parent->m_BalanceFactor = 0;
+                            child = parent->m_Right = new AVLTreeElement<KEY, DATA>(this);
                         }
-                        else
+                        catch (const std::bad_alloc &ex)
                         {
-                            if (child->m_BalanceFactor == 1)
-                            {
-                                grand_parent->m_BalanceFactor = -1;
-                                parent->m_BalanceFactor = 0;
-                                child->m_BalanceFactor = 0;
-                            }
-                            else // child->m_BalanceFactor == -1
-                            {
-                                grand_parent->m_BalanceFactor = 0;
-                                parent->m_BalanceFactor = 1;
-                                child->m_BalanceFactor = 0;
-                            }
+                            child = parent->m_Right = nullptr;
+                            return false;
                         }
+                        break;
                     }
-                    if (grand_parent->m_Left == parent && parent->m_Left == child)
+                    else
                     {
-                        RightRotation(grand_parent, parent);
+                        parent = parent->m_Right;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            copy<KEY>(&child->m_Key, &key);
+            child->m_Data = std::move(data);
+            child->m_Parent = parent;
+            while (parent != nullptr)
+            {
+                parent->m_BalanceFactor += (parent->m_Left == child ? 1 : -1);
+                if (parent->m_BalanceFactor == 2 || parent->m_BalanceFactor == -2 || parent->m_BalanceFactor == 0)
+                {
+                    break;
+                }
+                child = parent;
+                parent = parent->m_Parent;
+            }
+            if (parent && parent->m_BalanceFactor != 0)
+            {
+                grand_parent = parent;
+                parent = (grand_parent->m_BalanceFactor == 2 ? grand_parent->m_Left : grand_parent->m_Right);
+                child = (parent->m_BalanceFactor == 1 ? parent->m_Left : parent->m_Right);
+                if (grand_parent->m_Left == parent && parent->m_Right == child)
+                {
+                    LeftRotation(parent, child);
+                    RightRotation(grand_parent, child);
+                    if (child->m_BalanceFactor == 0)
+                    {
                         grand_parent->m_BalanceFactor = 0;
                         parent->m_BalanceFactor = 0;
                     }
-                    if (grand_parent->m_Right == parent && parent->m_Left == child)
+                    else
                     {
-                        RightRotation(parent, child);
-                        LeftRotation(grand_parent, child);
-                        if (child->m_BalanceFactor == 0)
+                        if (child->m_BalanceFactor == 1)
+                        {
+                            grand_parent->m_BalanceFactor = -1;
+                            parent->m_BalanceFactor = 0;
+                            child->m_BalanceFactor = 0;
+                        }
+                        else // child->m_BalanceFactor == -1
                         {
                             grand_parent->m_BalanceFactor = 0;
-                            parent->m_BalanceFactor = 0;
-                        }
-                        else
-                        {
-                            if (child->m_BalanceFactor == 1)
-                            {
-                                grand_parent->m_BalanceFactor = 0;
-                                parent->m_BalanceFactor = -1;
-                                child->m_BalanceFactor = 0;
-                            }
-                            else // child->m_BalanceFactor == -1
-                            {
-                                grand_parent->m_BalanceFactor = 1;
-                                parent->m_BalanceFactor = 0;
-                                child->m_BalanceFactor = 0;
-                            }
+                            parent->m_BalanceFactor = 1;
+                            child->m_BalanceFactor = 0;
                         }
                     }
-                    if (grand_parent->m_Right == parent && parent->m_Right == child)
+                }
+                if (grand_parent->m_Left == parent && parent->m_Left == child)
+                {
+                    RightRotation(grand_parent, parent);
+                    grand_parent->m_BalanceFactor = 0;
+                    parent->m_BalanceFactor = 0;
+                }
+                if (grand_parent->m_Right == parent && parent->m_Left == child)
+                {
+                    RightRotation(parent, child);
+                    LeftRotation(grand_parent, child);
+                    if (child->m_BalanceFactor == 0)
                     {
-                        LeftRotation(grand_parent, parent);
                         grand_parent->m_BalanceFactor = 0;
                         parent->m_BalanceFactor = 0;
                     }
+                    else
+                    {
+                        if (child->m_BalanceFactor == 1)
+                        {
+                            grand_parent->m_BalanceFactor = 0;
+                            parent->m_BalanceFactor = -1;
+                            child->m_BalanceFactor = 0;
+                        }
+                        else // child->m_BalanceFactor == -1
+                        {
+                            grand_parent->m_BalanceFactor = 1;
+                            parent->m_BalanceFactor = 0;
+                            child->m_BalanceFactor = 0;
+                        }
+                    }
+                }
+                if (grand_parent->m_Right == parent && parent->m_Right == child)
+                {
+                    LeftRotation(grand_parent, parent);
+                    grand_parent->m_BalanceFactor = 0;
+                    parent->m_BalanceFactor = 0;
                 }
             }
         }

@@ -1,9 +1,9 @@
-#include <chrono> // std::chrono
-#include <map>    // std::map
-#include <mutex>  // std::mutex, std::unique_lock
-#include <deque>  // std::deque
-
-#include <string>  // std::string
+#include <chrono>   // std::chrono
+#include <map>      // std::map
+#include <mutex>    // std::mutex, std::unique_lock
+#include <deque>    // std::deque
+#include <iostream> // std::cout
+#include <string>   // std::string
 
 #ifdef __linux__
 // Linux platform
@@ -44,23 +44,20 @@ class TimeMeasure
         g_History[m_Class].push_back(elapsed_seconds.count());
     }
 
-    static void CollectResults()
+    static void CollectResults(std::ostream& out)
     {
         std::unique_lock<std::mutex> lock(g_Lock);
         for (std::map<std::string, std::deque<double>>::iterator dq_it = g_History.begin(); dq_it != g_History.end(); ++dq_it)
         {
-            std::deque<double>::iterator it = dq_it->second.begin();
             double avg = .0;
-
-            while (it != dq_it->second.end())
+            for (double t : dq_it->second)
             {
-                avg += (*it);
-                it++;
+                avg += t;
             }
-            std::cout<<"============================="<<std::endl;
-            std::cout<<"Class:     "<<dq_it->first<<std::endl;
-            std::cout<<"Counts:    "<<dq_it->second.size() << std::endl;
-            std::cout<<"Avg. Time: "<<avg / dq_it->second.size() << std::endl;
+            out << "Class:      " << dq_it->first << std::endl;
+            out << "Counts:     " << dq_it->second.size() << std::endl;
+            out << "Total Time: " << avg << std::endl;
+            out << "Avg. Time:  " << avg / dq_it->second.size() << std::endl;
         }
     }
 

@@ -3,3 +3,13 @@ avltree
 
 timemeasurement
 !timemeasurement/TimeMeasurement.h
+
+singleshottimer
+!singleshottimer/SingleShotTimer.h
+!singleshottimer/main.cpp
+!singleshottimer/Makefile
+
+threadpool
+!threadpool/ThreadPool.h
+!threadpool/example.cpp
+!threadpool/Makefile

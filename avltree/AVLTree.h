@@ -502,7 +502,6 @@ class AVLTree
     AVLTreeElement<KEY, DATA> *m_Root;
     AVLTreeElement<KEY, DATA> *m_Head;
     AVLTreeElement<KEY, DATA> *m_Tail;
-    AVLTreeElement<KEY, DATA> *m_Iter;
     unsigned int m_Size;
 
     inline void LeftRotation(AVLTreeElement<KEY, DATA> *const parent, AVLTreeElement<KEY, DATA> *const child)
@@ -565,7 +564,6 @@ class AVLTree
         m_Root = nullptr;
         m_Head = nullptr;
         m_Tail = nullptr;
-        m_Iter = nullptr;
         m_Size = 0;
     }
     ~AVLTree<KEY, DATA>()
@@ -968,7 +966,6 @@ class AVLTree
         m_Root = nullptr;
         m_Head = nullptr;
         m_Tail = nullptr;
-        m_Iter = nullptr;
     }
 
   private:
@@ -1005,37 +1002,48 @@ class AVLTree
         }
     }
 
-    void InitIteration()
+  public:
+    class Iterator
     {
-        m_Iter = m_Head;
+      private:
+        AVLTreeElement<KEY, DATA> *m_Position;
+
+      public:
+        Iterator(AVLTreeElement<KEY, DATA> *x) : m_Position(x) {}
+        Iterator(const Iterator &it) : m_Position(it.m_Position) {}
+        Iterator &operator++()
+        {
+            m_Position = m_Position->m_Next;
+            return *this;
+        }
+        Iterator operator++(int)
+        {
+            Iterator tmp(*this);
+            operator++();
+            return tmp;
+        }
+        bool operator==(const Iterator &rhs) const
+        {
+            return m_Position == rhs.m_Position;
+        }
+        bool operator!=(const Iterator &rhs) const
+        {
+            return m_Position != rhs.m_Position;
+        }
+        DATA &operator*()
+        {
+            return m_Position->m_Data;
+        }
+    };
+
+    Iterator begin()
+    {
+        return std::move(Iterator(m_Head));
     }
 
-    bool GetNextElement(DATA &data)
+    Iterator end()
     {
-        if (m_Iter == nullptr)
-        {
-            return false;
-        }
-        else
-        {
-            data = m_Iter->m_Data;
-            m_Iter = m_Iter->m_Next;
-            return true;
-        }
-    }
-
-    DATA *GetNextElement()
-    {
-        if (m_Iter == nullptr)
-        {
-            return nullptr;
-        }
-        else
-        {
-            DATA *const ret = &m_Iter->m_Data;
-            m_Iter = m_Iter->m_Next;
-            return ret;
-        }
+        return std::move(Iterator(nullptr));
     }
 
     DATA &operator[](const KEY &key)

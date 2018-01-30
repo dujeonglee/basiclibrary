@@ -208,7 +208,7 @@ class AVLTreeElement
     {
         if (m_Tree->m_Size == 0)
         {
-            // Dtor is called by clear, deleting all elements.
+            // This is the case that Dtor is called by clear, deleting all elements.
             // We don't need to re-arrange tree structure.
             return;
         }
@@ -651,14 +651,18 @@ class AVLTree
             while (parent != nullptr)
             {
                 parent->m_BalanceFactor += (parent->m_Left == child ? 1 : -1);
-                if (parent->m_BalanceFactor == 2 || parent->m_BalanceFactor == -2 || parent->m_BalanceFactor == 0)
+                if (parent->m_BalanceFactor == 2 || parent->m_BalanceFactor == -2)
                 {
                     break;
+                }
+                else if (parent->m_BalanceFactor == 0)
+                {
+                    return true;
                 }
                 child = parent;
                 parent = parent->m_Parent;
             }
-            if (parent && parent->m_BalanceFactor != 0)
+            if (parent)
             {
                 grand_parent = parent;
                 parent = (grand_parent->m_BalanceFactor == 2 ? grand_parent->m_Left : grand_parent->m_Right);
@@ -806,9 +810,13 @@ class AVLTree
             while (parent != nullptr)
             {
                 parent->m_BalanceFactor += (parent->m_Left == child ? 1 : -1);
-                if (parent->m_BalanceFactor == 2 || parent->m_BalanceFactor == -2 || parent->m_BalanceFactor == 0)
+                if (parent->m_BalanceFactor == 2 || parent->m_BalanceFactor == -2)
                 {
                     break;
+                }
+                else if(parent->m_BalanceFactor == 0)
+                {
+                    return true;
                 }
                 child = parent;
                 parent = parent->m_Parent;
@@ -843,13 +851,13 @@ class AVLTree
                         }
                     }
                 }
-                if (grand_parent->m_Left == parent && parent->m_Left == child)
+                else if (grand_parent->m_Left == parent && parent->m_Left == child)
                 {
                     RightRotation(grand_parent, parent);
                     grand_parent->m_BalanceFactor = 0;
                     parent->m_BalanceFactor = 0;
                 }
-                if (grand_parent->m_Right == parent && parent->m_Left == child)
+                else if (grand_parent->m_Right == parent && parent->m_Left == child)
                 {
                     RightRotation(parent, child);
                     LeftRotation(grand_parent, child);
@@ -874,7 +882,7 @@ class AVLTree
                         }
                     }
                 }
-                if (grand_parent->m_Right == parent && parent->m_Right == child)
+                else // (grand_parent->m_Right == parent && parent->m_Right == child)
                 {
                     LeftRotation(grand_parent, parent);
                     grand_parent->m_BalanceFactor = 0;

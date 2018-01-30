@@ -24,20 +24,20 @@ typedef std::chrono::steady_clock CLOCK;
 
 typedef std::chrono::time_point<CLOCK> TimePoint;
 
-class TimeMeasure
+class TimeMeasurement
 {
   public:
     static std::map<std::string, std::deque<double>> g_History;
     static std::mutex g_Lock;
 
   public:
-    TimeMeasure() = delete;
-    TimeMeasure(const std::string &classStr) : m_Class(classStr)
+    TimeMeasurement() = delete;
+    TimeMeasurement(const std::string &classStr) : m_Class(classStr)
     {
         m_Start = CLOCK::now();
     }
 
-    ~TimeMeasure()
+    ~TimeMeasurement()
     {
         std::chrono::duration<double> elapsed_seconds = CLOCK::now() - m_Start;
         std::unique_lock<std::mutex> lock(g_Lock);
@@ -61,7 +61,7 @@ class TimeMeasure
         }
     }
 
-    void Reset()
+    static void Reset()
     {
         std::unique_lock<std::mutex> lock(g_Lock);
         g_History.clear();
@@ -72,5 +72,5 @@ class TimeMeasure
     TimePoint m_Start;
 };
 
-std::map<std::string, std::deque<double>> TimeMeasure::g_History;
-std::mutex TimeMeasure::g_Lock;
+std::map<std::string, std::deque<double>> TimeMeasurement::g_History;
+std::mutex TimeMeasurement::g_Lock;

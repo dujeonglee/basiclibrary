@@ -13,6 +13,7 @@ private:
   uint32_t m_Elements;
   const KEY c_NULLKEY;
   DATA c_NULLDATA;
+  uint32_t m_StartIndex;
 
 private:
   void Put(uint32_t hint, const std::pair<KEY, DATA> &data)
@@ -26,6 +27,10 @@ private:
       if (m_Table[hint].first == c_NULLKEY)
       {
         m_Table[hint] = data;
+        if(m_StartIndex > hint)
+        {
+          m_StartIndex = hint;
+        }
         break;
       }
       else
@@ -51,6 +56,10 @@ private:
       if (m_Table[index].first == c_NULLKEY)
       {
         m_Table[index] = data;
+        if(m_StartIndex > index)
+        {
+          m_StartIndex = index;
+        }
         break;
       }
       else
@@ -76,6 +85,10 @@ private:
       if (m_Table[index].first == c_NULLKEY)
       {
         std::swap(m_Table[index], data);
+        if(m_StartIndex > index)
+        {
+          m_StartIndex = index;
+        }
         break;
       }
       else
@@ -99,8 +112,11 @@ private:
     {
       if (m_Table[hint].first == c_NULLKEY)
       {
-        auto tmp = std::move(m_Table[hint]);
         std::swap(m_Table[hint], data);
+        if(m_StartIndex > hint)
+        {
+          m_StartIndex = hint;
+        }
         break;
       }
       else
@@ -134,6 +150,7 @@ private:
       m_TableSize /= 2;
       return false;
     }
+    m_StartIndex = m_TableSize;
     for (uint32_t i = 0; i < m_TableSize / 2; i++)
     {
       const uint32_t new_index = (std::hash<KEY>{}(m_Table[i].first) % m_TableSize);
@@ -153,12 +170,14 @@ public:
     m_Elements = 0;
     m_TableSize = 0x1 << 20;
     m_Table.resize(m_TableSize, std::pair<KEY, DATA>(c_NULLKEY, (DATA)0));
+    m_StartIndex = m_TableSize;
   }
   Map<KEY, DATA>(const KEY &nullkey, uint32_t size) : c_NULLKEY(nullkey)
   {
     m_Elements = 0;
     m_TableSize = size;
     m_Table.resize(m_TableSize, std::pair<KEY, DATA>(c_NULLKEY, (DATA)0));
+    m_StartIndex = m_TableSize;
   }
   Map<KEY, DATA>(const Map<KEY, DATA> &other)
   {
@@ -166,6 +185,7 @@ public:
     m_TableSize = other.m_TableSize;
     m_Elements = other.m_Elements;
     m_Table = other.m_Table;
+    m_StartIndex = m_TableSize;
   }
 
   Map<KEY, DATA> &operator=(const Map<KEY, DATA> &other)
@@ -251,5 +271,56 @@ public:
         }
       }
     } while (true);
+  }
+
+  class Iterator
+  {
+  private:
+    Map<KEY, DATA> *m_List;
+    uint32_t m_Position;
+
+  public:
+    Iterator(Map<KEY, DATA> *list, uint32_t position) : m_List(list), m_Position(position) {}
+    Iterator(const Iterator &it) : m_List(it.m_List), m_Position(it.m_Position) {}
+    Iterator &operator++()
+    {
+      do
+      {
+        m_Position++;
+        if (m_List->m_Table[m_Position].first != m_List->c_NULLKEY)
+        {
+          break;
+        }
+      } while (m_Position < m_List->m_Table.size());
+      return *this;
+    }
+    Iterator operator++(int)
+    {
+      Iterator tmp(*this);
+      operator++();
+      return tmp;
+    }
+    bool operator==(const Iterator &rhs) const
+    {
+      return (m_List == rhs.m_List) && (m_Position == rhs.m_Position);
+    }
+    bool operator!=(const Iterator &rhs) const
+    {
+      return (m_List != rhs.m_List) || (m_Position != rhs.m_Position);
+    }
+    DATA &operator*()
+    {
+      return m_List->m_Table[m_Position].second;
+    }
+  };
+
+  Iterator begin()
+  {
+    return std::move(Iterator(this, m_StartIndex));
+  }
+
+  Iterator end()
+  {
+    return std::move(Iterator(this, m_TableSize));
   }
 };

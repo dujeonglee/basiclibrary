@@ -4,36 +4,11 @@
 #include <vector>
 #include <iostream>
 
-template <typename TYPE>
-class GenericObject
-{
-private:
-  alignas(TYPE) uint8_t buffer[sizeof(TYPE)] = {0};
-
-public:
-  GenericObject<TYPE>() = default;
-
-  GenericObject<TYPE>(const TYPE &obj)
-  {
-    Get() = obj;
-  }
-
-  GenericObject<TYPE>(TYPE &&obj)
-  {
-    Get() = obj;
-  }
-
-  TYPE &Get()
-  {
-    return (*reinterpret_cast<TYPE *>(buffer));
-  }
-};
-
 template <typename KEY, typename DATA>
 class Map
 {
 private:
-  std::vector<std::pair<GenericObject<KEY>, GenericObject<DATA>>> m_Table;
+  std::vector<std::pair<KEY, DATA>> m_Table;
   uint32_t m_TableSize;
   uint32_t m_Elements;
   const KEY c_EmptyKey;
@@ -52,7 +27,7 @@ private:
     m_TableSize *= 2;
     try
     {
-      m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>()));
+      m_Table.resize(m_TableSize, std::pair<KEY, DATA>(c_EmptyKey, DATA()));
     }
     catch (const std::exception &ex)
     {
@@ -61,14 +36,14 @@ private:
     }
     for (uint32_t old_position = 0; old_position < m_TableSize; old_position++)
     {
-      uint32_t new_position = (std::hash<KEY>{}(m_Table[old_position].first.Get()) % m_TableSize);
+      uint32_t new_position = (std::hash<KEY>{}(m_Table[old_position].first) % m_TableSize);
       do
       {
-        if (m_Table[new_position].first.Get() == c_EmptyKey)
+        if (m_Table[new_position].first == c_EmptyKey)
         {
-          m_Table[new_position].first.Get() = m_Table[old_position].first.Get();
-          m_Table[new_position].second.Get() = m_Table[old_position].second.Get();
-          m_Table[old_position].first.Get() = c_EmptyKey;
+          m_Table[new_position].first = m_Table[old_position].first;
+          m_Table[new_position].second = m_Table[old_position].second;
+          m_Table[old_position].first = c_EmptyKey;
           break;
         }
         else if (new_position == old_position)
@@ -93,7 +68,7 @@ public:
   {
     m_Elements = 0;
     m_TableSize = 0x1 << 16;
-    m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>()));
+    m_Table.resize(m_TableSize, std::pair<KEY, DATA>(c_EmptyKey, DATA()));
   }
   Map<KEY, DATA>(const Map<KEY, DATA> &other)
   {
@@ -120,18 +95,16 @@ public:
     do
     {
       // Item with new key.
-      if (m_Table[position].first.Get() == c_EmptyKey)
+      if (m_Table[position].first == c_EmptyKey)
       {
-        m_Table[position].first.Get() = data.first;
-        m_Table[position].second.Get() = data.second;
+        m_Table[position] = data;
         m_Elements++;
         break;
       }
       // Existing item.
-      else if (m_Table[position].first.Get() == data.first)
+      else if (m_Table[position].first == data.first)
       {
-        m_Table[position].first.Get() = data.first;
-        m_Table[position].second.Get() = data.second;
+        m_Table[position] = data;
         break;
       }
       else
@@ -159,18 +132,18 @@ public:
     do
     {
       // Item with new key.
-      if (m_Table[position].first.Get() == c_EmptyKey)
+      if (m_Table[position].first == c_EmptyKey)
       {
-        m_Table[position].first.Get() = data.first;
-        m_Table[position].second.Get() = data.second;
+        m_Table[position].first = data.first;
+        m_Table[position].second = data.second;
         m_Elements++;
         break;
       }
       // Existing item.
-      else if (m_Table[position].first.Get() == data.first)
+      else if (m_Table[position].first == data.first)
       {
-        m_Table[position].first.Get() = data.first;
-        m_Table[position].second.Get() = data.second;
+        m_Table[position].first = data.first;
+        m_Table[position].second = data.second;
         break;
       }
       else
@@ -192,12 +165,12 @@ public:
     DATA *ret = nullptr;
     do
     {
-      if (m_Table[position].first.Get() == key)
+      if (m_Table[position].first == key)
       {
-        ret = &(m_Table[position].second.Get());
+        ret = &(m_Table[position].second);
         break;
       }
-      else if (m_Table[position].first.Get() == c_EmptyKey)
+      else if (m_Table[position].first == c_EmptyKey)
       {
         break;
       }
@@ -227,7 +200,7 @@ public:
       do
       {
         m_Position++;
-        if (m_List->m_Table[m_Position].first.Get() != m_List->c_EmptyKey)
+        if (m_List->m_Table[m_Position].first != m_List->c_EmptyKey)
         {
           break;
         }
@@ -257,7 +230,7 @@ public:
   Iterator begin()
   {
     uint32_t start = 0;
-    while (m_Table[start].first.Get() == c_EmptyKey)
+    while (m_Table[start].first == c_EmptyKey)
     {
       start++;
     }

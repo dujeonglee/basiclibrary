@@ -4,188 +4,103 @@
 #include <vector>
 #include <iostream>
 
+template <typename TYPE>
+class GenericObject
+{
+private:
+  alignas(TYPE) uint8_t buffer[sizeof(TYPE)] = {0};
+
+public:
+  GenericObject<TYPE>() = default;
+
+  GenericObject<TYPE>(const TYPE &obj)
+  {
+    Get() = obj;
+  }
+
+  GenericObject<TYPE>(TYPE &&obj)
+  {
+    Get() = obj;
+  }
+
+  TYPE &Get()
+  {
+    return (*reinterpret_cast<TYPE *>(buffer));
+  }
+};
+
 template <typename KEY, typename DATA>
 class Map
 {
 private:
-  std::vector<std::pair<KEY, DATA>> m_Table;
+  std::vector<std::pair<GenericObject<KEY>, GenericObject<DATA>>> m_Table;
   uint32_t m_TableSize;
   uint32_t m_Elements;
-  const KEY c_NULLKEY;
-  DATA c_NULLDATA;
-  uint32_t m_StartIndex;
+  const KEY c_EmptyKey;
 
 private:
-  void Put(uint32_t hint, const std::pair<KEY, DATA> &data)
+  void ReHash()
   {
-    /**
-      * Open addressing.
-      * Linear probing.
-      */
-    do
+    if (m_Elements <= m_TableSize * 2 / 3)
     {
-      if (m_Table[hint].first == c_NULLKEY)
-      {
-        m_Table[hint] = data;
-        if(m_StartIndex > hint)
-        {
-          m_StartIndex = hint;
-        }
-        break;
-      }
-      else
-      {
-        hint++;
-      }
-      if (hint == m_TableSize)
-      {
-        hint = 0;
-      }
-    } while (true);
-  }
-
-  void Put(const std::pair<KEY, DATA> &data)
-  {
-    /**
-      * Open addressing.
-      * Linear probing.
-      */
-    uint32_t index = std::hash<KEY>{}(data.first) % m_TableSize;
-    do
-    {
-      if (m_Table[index].first == c_NULLKEY)
-      {
-        m_Table[index] = data;
-        if(m_StartIndex > index)
-        {
-          m_StartIndex = index;
-        }
-        break;
-      }
-      else
-      {
-        index++;
-      }
-      if (index == m_TableSize)
-      {
-        index = 0;
-      }
-    } while (true);
-  }
-
-  void Put(std::pair<KEY, DATA> &&data)
-  {
-    /**
-      * Open addressing.
-      * Linear probing.
-      */
-    uint32_t index = std::hash<KEY>{}(data.first) % m_TableSize;
-    do
-    {
-      if (m_Table[index].first == c_NULLKEY)
-      {
-        std::swap(m_Table[index], data);
-        if(m_StartIndex > index)
-        {
-          m_StartIndex = index;
-        }
-        break;
-      }
-      else
-      {
-        index++;
-      }
-      if (index == m_TableSize)
-      {
-        index = 0;
-      }
-    } while (true);
-  }
-
-  void Put(uint32_t hint, std::pair<KEY, DATA> &&data)
-  {
-    /**
-      * Open addressing.
-      * Linear probing.
-      */
-    do
-    {
-      if (m_Table[hint].first == c_NULLKEY)
-      {
-        std::swap(m_Table[hint], data);
-        if(m_StartIndex > hint)
-        {
-          m_StartIndex = hint;
-        }
-        break;
-      }
-      else
-      {
-        hint++;
-      }
-      if (hint == m_TableSize)
-      {
-        hint = 0;
-      }
-    } while (true);
-  }
-
-  bool ReHash()
-  {
-    /**
-     * Double the size of hash table.
-     * Perform rehashing on the old elements.
-     */
+      return;
+    }
     if (m_TableSize == 0xffffffff)
     {
-      return false;
+      return;
     }
     m_TableSize *= 2;
     try
     {
-      m_Table.resize(m_TableSize, std::pair<KEY, DATA>(c_NULLKEY, (DATA)0));
+      m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>()));
     }
     catch (const std::exception &ex)
     {
       m_TableSize /= 2;
-      return false;
+      return;
     }
-    m_StartIndex = m_TableSize;
-    for (uint32_t i = 0; i < m_TableSize / 2; i++)
+    for (uint32_t old_position = 0; old_position < m_TableSize; old_position++)
     {
-      const uint32_t new_index = (std::hash<KEY>{}(m_Table[i].first) % m_TableSize);
-      if (new_index == i)
+      uint32_t new_position = (std::hash<KEY>{}(m_Table[old_position].first.Get()) % m_TableSize);
+      do
       {
-        continue;
-      }
-      Put(new_index, std::move(m_Table[i]));
-      m_Table[i].first = c_NULLKEY;
+        if (m_Table[new_position].first.Get() == c_EmptyKey)
+        {
+          m_Table[new_position].first.Get() = m_Table[old_position].first.Get();
+          m_Table[new_position].second.Get() = m_Table[old_position].second.Get();
+          m_Table[old_position].first.Get() = c_EmptyKey;
+          break;
+        }
+        else if (new_position == old_position)
+        {
+          break;
+        }
+        else
+        {
+          new_position++;
+          if (new_position == m_TableSize)
+          {
+            new_position = 0;
+          }
+        }
+      } while (true);
     }
   }
 
 public:
   Map<KEY, DATA>() = delete;
-  Map<KEY, DATA>(const KEY &nullkey) : c_NULLKEY(nullkey)
+  Map<KEY, DATA>(const KEY &emptykey) : c_EmptyKey(emptykey)
   {
     m_Elements = 0;
-    m_TableSize = 0x1 << 20;
-    m_Table.resize(m_TableSize, std::pair<KEY, DATA>(c_NULLKEY, (DATA)0));
-    m_StartIndex = m_TableSize;
-  }
-  Map<KEY, DATA>(const KEY &nullkey, uint32_t size) : c_NULLKEY(nullkey)
-  {
-    m_Elements = 0;
-    m_TableSize = size;
-    m_Table.resize(m_TableSize, std::pair<KEY, DATA>(c_NULLKEY, (DATA)0));
-    m_StartIndex = m_TableSize;
+    m_TableSize = 0x1 << 16;
+    m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>()));
   }
   Map<KEY, DATA>(const Map<KEY, DATA> &other)
   {
-    c_NULLKEY = other.c_NULLKEY;
+    c_EmptyKey = other.c_EmptyKey;
     m_TableSize = other.m_TableSize;
     m_Elements = other.m_Elements;
     m_Table = other.m_Table;
-    m_StartIndex = m_TableSize;
   }
 
   Map<KEY, DATA> &operator=(const Map<KEY, DATA> &other)
@@ -195,82 +110,107 @@ public:
 
   bool Push(const std::pair<KEY, DATA> &data)
   {
+    // Table is full.
     if (m_Elements == m_TableSize)
     {
       return false;
     }
-    Put(data);
-    m_Elements++;
-    if (m_Elements > m_TableSize / 2)
+    // Get insert position.
+    uint32_t position = std::hash<KEY>{}(data.first) % m_TableSize;
+    do
     {
-      ReHash();
-    }
+      // Item with new key.
+      if (m_Table[position].first.Get() == c_EmptyKey)
+      {
+        m_Table[position].first.Get() = data.first;
+        m_Table[position].second.Get() = data.second;
+        m_Elements++;
+        break;
+      }
+      // Existing item.
+      else if (m_Table[position].first.Get() == data.first)
+      {
+        m_Table[position].first.Get() = data.first;
+        m_Table[position].second.Get() = data.second;
+        break;
+      }
+      else
+      {
+        position++;
+        if (position == m_TableSize)
+        {
+          position = 0;
+        }
+      }
+    } while (true);
+    ReHash();
     return true;
   }
 
   bool Push(std::pair<KEY, DATA> &&data)
   {
+    // Table is full.
     if (m_Elements == m_TableSize)
     {
       return false;
     }
-    Put(data);
-    m_Elements++;
-    if (m_Elements > m_TableSize / 2)
-    {
-      ReHash();
-    }
-    return true;
-  }
-
-  DATA &FindRef(const KEY &key)
-  {
-    uint32_t index = std::hash<KEY>{}(key) % m_TableSize;
+    // Get insert position.
+    uint32_t position = std::hash<KEY>{}(data.first) % m_TableSize;
     do
     {
-      if (m_Table[index].first == key)
+      // Item with new key.
+      if (m_Table[position].first.Get() == c_EmptyKey)
       {
-        return m_Table[index].second;
+        m_Table[position].first.Get() = data.first;
+        m_Table[position].second.Get() = data.second;
+        m_Elements++;
         break;
       }
-      else if (m_Table[index].first == c_NULLKEY)
+      // Existing item.
+      else if (m_Table[position].first.Get() == data.first)
       {
-        return c_NULLDATA;
+        m_Table[position].first.Get() = data.first;
+        m_Table[position].second.Get() = data.second;
+        break;
       }
       else
       {
-        index++;
-        if (index == m_TableSize)
+        position++;
+        if (position == m_TableSize)
         {
-          index = 0;
+          position = 0;
         }
       }
     } while (true);
+    ReHash();
+    return true;
   }
 
   DATA *FindPtr(const KEY &key)
   {
-    uint32_t index = std::hash<KEY>{}(key) % m_TableSize;
+    uint32_t position = std::hash<KEY>{}(key) % m_TableSize;
+    DATA *ret = nullptr;
     do
     {
-      if (m_Table[index].first == key)
+      if (m_Table[position].first.Get() == key)
       {
-        return &m_Table[index].second;
+        ret = &(m_Table[position].second.Get());
         break;
       }
-      else if (m_Table[index].first == c_NULLKEY)
+      else if (m_Table[position].first.Get() == c_EmptyKey)
       {
-        return nullptr;
+        break;
       }
       else
       {
-        index++;
-        if (index == m_TableSize)
+        position++;
+        if (position == m_TableSize)
         {
-          index = 0;
+          position = 0;
         }
       }
     } while (true);
+    return ret;
   }
 
   class Iterator
@@ -287,7 +227,7 @@ public:
       do
       {
         m_Position++;
-        if (m_List->m_Table[m_Position].first != m_List->c_NULLKEY)
+        if (m_List->m_Table[m_Position].first.Get() != m_List->c_EmptyKey)
         {
           break;
         }
@@ -316,11 +256,21 @@ public:
 
   Iterator begin()
   {
-    return std::move(Iterator(this, m_StartIndex));
+    uint32_t start = 0;
+    while (m_Table[start].first.Get() == c_EmptyKey)
+    {
+      start++;
+    }
+    return Iterator(this, start);
   }
 
   Iterator end()
   {
-    return std::move(Iterator(this, m_TableSize));
+    return Iterator(this, m_TableSize);
+  }
+
+  const uint32_t Size()
+  {
+    return m_Elements;
   }
 };

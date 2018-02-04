@@ -3,6 +3,7 @@
 #include <functional>
 #include <vector>
 #include <iostream>
+#include <type_traits>
 
 template <typename TYPE>
 class GenericObject
@@ -12,21 +13,51 @@ private:
 
 public:
   /* Constructors*/
-  GenericObject<TYPE>() {}
-  GenericObject<TYPE>(const TYPE &value) { Get() = value; }
-  GenericObject<TYPE>(TYPE &&value) { Get() = std::move(value); }
-  GenericObject<TYPE>(const GenericObject<TYPE> &copyobj) { Get() = copyobj.ConstGet(); }
-  GenericObject<TYPE>(GenericObject<TYPE> &&moveobj) { Get() = std::move(moveobj.Get()); }
+  GenericObject<TYPE>()
+  {
+    new (obj) TYPE;
+  }
+  GenericObject<TYPE>(const TYPE &value)
+  {
+    new (obj) TYPE;
+    Get() = value;
+  }
+  GenericObject<TYPE>(TYPE &&value)
+  {
+    new (obj) TYPE;
+    Get() = std::move(value);
+  }
+  GenericObject<TYPE>(const GenericObject<TYPE> &copyobj)
+  {
+    new (obj) TYPE;
+    Get() = copyobj.ConstGet();
+  }
+  GenericObject<TYPE>(GenericObject<TYPE> &&moveobj)
+  {
+    new (obj) TYPE;
+    Get() = std::move(moveobj.Get());
+  }
 
   /* Assign operators */
-  GenericObject<TYPE> &operator=(const GenericObject<TYPE> &obj){Get() = obj.ConstGet();return (*this);}
-  GenericObject<TYPE> &operator=(GenericObject<TYPE> &&obj){Get() = std::move(obj.Get());return (*this);}
+  GenericObject<TYPE> &operator=(const GenericObject<TYPE> &obj)
+  {
+    Get() = obj.ConstGet();
+    return (*this);
+  }
+  GenericObject<TYPE> &operator=(GenericObject<TYPE> &&obj)
+  {
+    Get() = std::move(obj.Get());
+    return (*this);
+  }
   /* Getters */
-  inline TYPE &Get()
+  TYPE &Get()
   {
     return (*reinterpret_cast<TYPE *>(obj));
   }
-  inline TYPE ConstGet() const { return (*reinterpret_cast<const TYPE *>(obj)); }
+  TYPE ConstGet() const
+  {
+    return (*reinterpret_cast<const TYPE *>(obj));
+  }
 };
 
 template <typename KEY, typename DATA>

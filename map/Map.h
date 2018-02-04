@@ -1,9 +1,6 @@
-#include <cstdint>
-#include <utility>
-#include <functional>
-#include <vector>
-#include <iostream>
-#include <type_traits>
+#include <cstdint>    // uint8_t
+#include <functional> // std::hash
+#include <vector>     // std::vector
 
 template <typename TYPE>
 class GenericObject
@@ -13,40 +10,33 @@ private:
 
 public:
   /* Constructors*/
-  GenericObject<TYPE>()
-  {
-    new (obj) TYPE;
-  }
+  GenericObject<TYPE>() = delete;
   GenericObject<TYPE>(const TYPE &value)
   {
-    new (obj) TYPE;
-    Get() = value;
+    new (obj) TYPE(value);
   }
   GenericObject<TYPE>(TYPE &&value)
   {
-    new (obj) TYPE;
-    Get() = std::move(value);
+    new (obj) TYPE(std::move(value));
   }
   GenericObject<TYPE>(const GenericObject<TYPE> &copyobj)
   {
-    new (obj) TYPE;
-    Get() = copyobj.ConstGet();
+    new (obj) TYPE(copyobj.ConstGet());
   }
   GenericObject<TYPE>(GenericObject<TYPE> &&moveobj)
   {
-    new (obj) TYPE;
-    Get() = std::move(moveobj.Get());
+    new (obj) TYPE(std::move(moveobj.Get()));
   }
 
   /* Assign operators */
-  GenericObject<TYPE> &operator=(const GenericObject<TYPE> &obj)
+  GenericObject<TYPE> &operator=(const GenericObject<TYPE> &o)
   {
-    Get() = obj.ConstGet();
+    Get() = o.ConstGet();
     return (*this);
   }
-  GenericObject<TYPE> &operator=(GenericObject<TYPE> &&obj)
+  GenericObject<TYPE> &operator=(GenericObject<TYPE> &&o)
   {
-    Get() = std::move(obj.Get());
+    Get() = std::move(o.Get());
     return (*this);
   }
   /* Getters */
@@ -68,6 +58,7 @@ private:
   uint32_t m_TableSize;
   uint32_t m_Elements;
   const KEY c_EmptyKey;
+  const DATA c_EmptyData;
 
 private:
   void ReHash()
@@ -83,7 +74,7 @@ private:
     m_TableSize *= 2;
     try
     {
-      m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>()));
+      m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData)));
     }
     catch (const std::exception &ex)
     {
@@ -120,11 +111,11 @@ private:
 
 public:
   Map<KEY, DATA>() = delete;
-  Map<KEY, DATA>(const KEY &emptykey) : c_EmptyKey(emptykey)
+  Map<KEY, DATA>(const KEY &emptykey, const DATA &emptydata) : c_EmptyKey(emptykey), c_EmptyData(emptydata)
   {
     m_Elements = 0;
     m_TableSize = 0x1 << 16;
-    m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>()));
+    m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData)));
   }
   Map<KEY, DATA>(const Map<KEY, DATA> &other)
   {

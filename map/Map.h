@@ -59,6 +59,7 @@ private:
   uint32_t m_Elements;
   const KEY c_EmptyKey;
   const DATA c_EmptyData;
+  DATA m_EmptyData;
 
 private:
   void ReHash()
@@ -130,7 +131,7 @@ public:
     return Map<KEY, DATA>(other);
   }
 
-  bool Push(const std::pair<KEY, DATA> &data)
+  bool Insert(const std::pair<KEY, DATA> &data)
   {
     // Table is full.
     if (m_Elements == m_TableSize)
@@ -169,7 +170,7 @@ public:
     return true;
   }
 
-  bool Push(std::pair<KEY, DATA> &&data)
+  bool Insert(std::pair<KEY, DATA> &&data)
   {
     // Table is full.
     if (m_Elements == m_TableSize)
@@ -233,6 +234,95 @@ public:
       }
     } while (true);
     return ret;
+  }
+
+  DATA &FindRef(const KEY &key)
+  {
+    uint32_t position = std::hash<KEY>{}(key) % m_TableSize;
+    do
+    {
+      if (m_Table[position].first.Get() == key)
+      {
+        return (m_Table[position].second.Get());
+      }
+      else if (m_Table[position].first.Get() == c_EmptyKey)
+      {
+        m_EmptyData = c_EmptyData;
+        return m_EmptyData;
+      }
+      else
+      {
+        position++;
+        if (position == m_TableSize)
+        {
+          position = 0;
+        }
+      }
+    } while (true);
+  }
+
+  bool Erase(const KEY &key)
+  {
+    uint32_t position = std::hash<KEY>{}(key) % m_TableSize;
+    do
+    {
+      if (m_Table[position].first.Get() == key)
+      {
+        // remove entry.
+        m_Table[position].first.Get() = c_EmptyKey;
+        position++;
+        if (position == m_TableSize)
+        {
+          position = 0;
+        }
+        // rehash entries
+        while (m_Table[position].first.Get() != c_EmptyKey)
+        {
+          uint32_t new_position = (std::hash<KEY>{}(m_Table[position].first.Get()) % m_TableSize);
+          do
+          {
+            if (m_Table[new_position].first.Get() == c_EmptyKey)
+            {
+              m_Table[new_position].first.Get() = m_Table[position].first.Get();
+              m_Table[new_position].second.Get() = m_Table[position].second.Get();
+              m_Table[position].first.Get() = c_EmptyKey;
+              break;
+            }
+            else if (new_position == position)
+            {
+              break;
+            }
+            else
+            {
+              new_position++;
+              if (new_position == m_TableSize)
+              {
+                new_position = 0;
+              }
+            }
+          } while (true);
+          position++;
+          if (position == m_TableSize)
+          {
+            position = 0;
+          }
+        }
+        m_Elements--;
+        return true;
+      }
+      else if (m_Table[position].first.Get() == c_EmptyKey)
+      {
+        return false;
+      }
+      else
+      {
+        position++;
+        if (position == m_TableSize)
+        {
+          position = 0;
+        }
+      }
+    } while (true);
   }
 
   class Iterator

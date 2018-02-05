@@ -51,7 +51,7 @@ public:
 };
 
 template <typename KEY, typename DATA>
-class Map
+class UnorderedMap
 {
 private:
   std::vector<std::pair<GenericObject<KEY>, GenericObject<DATA>>> m_Table;
@@ -111,14 +111,14 @@ private:
   }
 
 public:
-  Map<KEY, DATA>() = delete;
-  Map<KEY, DATA>(const KEY &emptykey, const DATA &emptydata) : c_EmptyKey(emptykey), c_EmptyData(emptydata)
+  UnorderedMap<KEY, DATA>() = delete;
+  UnorderedMap<KEY, DATA>(const KEY &emptykey, const DATA &emptydata) : c_EmptyKey(emptykey), c_EmptyData(emptydata)
   {
     m_Elements = 0;
     m_TableSize = 0x1 << 16;
     m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData)));
   }
-  Map<KEY, DATA>(const Map<KEY, DATA> &other)
+  UnorderedMap<KEY, DATA>(const UnorderedMap<KEY, DATA> &other)
   {
     c_EmptyKey = other.c_EmptyKey;
     m_TableSize = other.m_TableSize;
@@ -126,9 +126,9 @@ public:
     m_Table = other.m_Table;
   }
 
-  Map<KEY, DATA> &operator=(const Map<KEY, DATA> &other)
+  UnorderedMap<KEY, DATA> &operator=(const UnorderedMap<KEY, DATA> &other)
   {
-    return Map<KEY, DATA>(other);
+    return UnorderedMap<KEY, DATA>(other);
   }
 
   bool Insert(const std::pair<KEY, DATA> &data)
@@ -270,12 +270,13 @@ public:
       {
         // remove entry.
         m_Table[position].first.Get() = c_EmptyKey;
+
+        // rehash entries
         position++;
         if (position == m_TableSize)
         {
           position = 0;
         }
-        // rehash entries
         while (m_Table[position].first.Get() != c_EmptyKey)
         {
           uint32_t new_position = (std::hash<KEY>{}(m_Table[position].first.Get()) % m_TableSize);
@@ -328,11 +329,11 @@ public:
   class Iterator
   {
   private:
-    Map<KEY, DATA> *m_List;
+    UnorderedMap<KEY, DATA> *m_List;
     uint32_t m_Position;
 
   public:
-    Iterator(Map<KEY, DATA> *list, uint32_t position) : m_List(list), m_Position(position) {}
+    Iterator(UnorderedMap<KEY, DATA> *list, uint32_t position) : m_List(list), m_Position(position) {}
     Iterator(const Iterator &it) : m_List(it.m_List), m_Position(it.m_Position) {}
     Iterator &operator++()
     {

@@ -7,7 +7,10 @@
 #include "ThreadPool.h"
 
 //#define BUSYWAITING
-
+namespace dujeonglee
+{
+namespace basiclibrary
+{
 #ifdef __linux__
 // Linux platform
 #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
@@ -350,4 +353,6 @@ template <uint32_t PRIORITY, uint32_t CUNCURRENCY>
 using TaskScheduler = SingleShotTimer<PRIORITY, CUNCURRENCY>;
 
 #undef GCC_VERSION
+}
+}
 #endif

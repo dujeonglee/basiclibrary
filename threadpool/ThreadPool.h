@@ -12,6 +12,10 @@
 #include <vector>             // std::vector
 #include <set>                // std::set
 
+namespace dujeonglee
+{
+namespace basiclibrary
+{
 template <const uint32_t INITIAL_PRIORITY, const uint32_t INITIAL_THREAD>
 class ThreadPool
 {
@@ -106,7 +110,8 @@ class ThreadPool
                     std::unique_lock<std::mutex> TaskQueueLock(self->m_TaskQueueLock);
                     self->m_WorkerIDs.erase(std::this_thread::get_id());
                 }
-            }).detach();
+            })
+                .detach();
         }
         catch (const std::system_error &ex)
         {
@@ -349,5 +354,7 @@ class ThreadPool
         }
     }
 };
+}
+}
 
 #endif

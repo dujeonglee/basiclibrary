@@ -14,6 +14,10 @@
 #include <string>
 #include <string.h>
 
+namespace dujeonglee
+{
+namespace basiclibrary
+{
 template <class KEY>
 inline bool less(const KEY &key1, const KEY &key2) { return memcmp(&key1, &key2, sizeof(KEY)) < 0; }
 template <class KEY>
@@ -814,7 +818,7 @@ class AVLTree
                 {
                     break;
                 }
-                else if(parent->m_BalanceFactor == 0)
+                else if (parent->m_BalanceFactor == 0)
                 {
                     return true;
                 }
@@ -1104,5 +1108,6 @@ class AVLTree
 
 template <class KEY, class DATA>
 using AVLMap = AVLTree<KEY, DATA>;
-
+}
+}
 #endif

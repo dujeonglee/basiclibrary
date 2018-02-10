@@ -1,7 +1,13 @@
+#ifndef _MAP_H_
+#define _MAP_H_
+
 #include <cstdint>    // uint8_t
 #include <functional> // std::hash
 #include <vector>     // std::vector
-
+namespace dujeonglee
+{
+namespace basiclibrary
+{
 namespace map
 {
 template <typename TYPE>
@@ -757,3 +763,7 @@ public:
 };
 }
 }
+}
+}
+
+#endif

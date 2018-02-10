@@ -1,6 +1,8 @@
 #include "ThreadPool.h"
 #include <iostream>
 
+using namespace dujeonglee::basiclibrary;
+
 int main(int argc, char *argv[])
 {
     std::cout<<"--------------------------------------------------------------------"<<std::endl;

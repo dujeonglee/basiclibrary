@@ -1,6 +1,7 @@
 #include "SingleShotTimer.h"
 #include <iostream>
 
+using namespace dujeonglee::basiclibrary;
 
 int main()
 {

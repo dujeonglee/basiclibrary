@@ -74,6 +74,8 @@ private:
 private:
   void ReHash()
   {
+    uint32_t max_probes = 0;
+    uint32_t probes = 0;
     if (m_Elements <= m_TableSize * 2 / 3)
     {
       return;
@@ -92,9 +94,10 @@ private:
       m_TableSize /= 2;
       return;
     }
-    for (uint32_t old_position = 0; old_position < m_TableSize; old_position++)
+    for (uint32_t old_position = 0; old_position < m_TableSize / 2 + max_probes; old_position++)
     {
       uint32_t new_position = (std::hash<KEY>{}(m_Table[old_position].first.Get()) % m_TableSize);
+      probes = 0;
       do
       {
         if (m_Table[new_position].first.Get() == c_EmptyKey)
@@ -102,19 +105,21 @@ private:
           m_Table[new_position].first.Get() = m_Table[old_position].first.Get();
           m_Table[new_position].second.Get() = m_Table[old_position].second.Get();
           m_Table[old_position].first.Get() = c_EmptyKey;
+          if (max_probes < probes)
+          {
+            max_probes = probes;
+          }
           break;
         }
         else if (new_position == old_position)
         {
           break;
         }
-        else
+        probes++;
+        new_position++;
+        if (new_position == m_TableSize)
         {
-          new_position++;
-          if (new_position == m_TableSize)
-          {
-            new_position = 0;
-          }
+          new_position = 0;
         }
       } while (true);
     }
@@ -401,6 +406,8 @@ private:
 private:
   void ReHash()
   {
+    uint32_t max_probes = 0;
+    uint32_t probes = 0;
     if (m_Elements <= m_TableSize * 2 / 3)
     {
       return;
@@ -420,12 +427,13 @@ private:
       return;
     }
     // ReHash
-    for (uint32_t old_position = 0; old_position < m_TableSize; old_position++)
+    for (uint32_t old_position = 0; old_position < m_TableSize / 2 + max_probes; old_position++)
     {
       uint32_t position = std::hash<KEY>{}(std::get<0>(m_Table[old_position]).Get()) % m_TableSize;
       std::tuple<GenericObject<KEY>, GenericObject<DATA>, uint32_t> item =
           std::tuple<GenericObject<KEY>, GenericObject<DATA>, uint32_t>(GenericObject<KEY>(std::get<0>(m_Table[old_position]).Get()), GenericObject<DATA>(std::get<1>(m_Table[old_position]).Get()), 0);
       std::get<0>(m_Table[old_position]).Get() = c_EmptyKey;
+      probes = 0;
       do
       {
         // Item with new key.
@@ -434,14 +442,10 @@ private:
           std::get<0>(m_Table[position]).Get() = std::get<0>(item).Get();
           std::get<1>(m_Table[position]).Get() = std::get<1>(item).Get();
           std::get<2>(m_Table[position]) = std::get<2>(item);
-          break;
-        }
-        // Existing item.
-        else if (std::get<0>(m_Table[position]).Get() == std::get<0>(item).Get())
-        {
-          std::get<0>(m_Table[position]).Get() = std::get<0>(item).Get();
-          std::get<1>(m_Table[position]).Get() = std::get<1>(item).Get();
-          std::get<2>(m_Table[position]) = std::get<2>(item);
+          if (max_probes < probes)
+          {
+            max_probes = probes;
+          }
           break;
         }
         // Robinhood
@@ -451,6 +455,7 @@ private:
           std::swap(std::get<1>(m_Table[position]).Get(), std::get<1>(item).Get());
           std::swap(std::get<2>(m_Table[position]), std::get<2>(item));
         }
+        probes++;
         position++;
         if (position == m_TableSize)
         {

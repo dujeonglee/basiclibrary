@@ -60,7 +60,7 @@ public:
 
 namespace plain
 {
-template <typename KEY, typename DATA>
+template <typename KEY, typename DATA, unsigned int MINSIZE = (0x1 << 16)>
 class UnorderedMap
 {
 private:
@@ -72,34 +72,29 @@ private:
   DATA m_EmptyData;
 
 private:
-  void ReHash()
+  void ReHash(const uint32_t &newSize)
   {
     std::pair<GenericObject<KEY>, GenericObject<DATA>> tmp = std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData));
     uint32_t max_probes = 0;
     uint32_t probes = 0;
-    if (m_Elements <= m_TableSize * 2 / 3)
+    const uint32_t oldSize = m_TableSize;
+    if (oldSize == newSize)
     {
       return;
     }
-    if (m_TableSize == 0xffffffff)
-    {
-      return;
-    }
-    m_TableSize *= 2;
     try
     {
-      m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData)));
+      m_Table.resize(newSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData)));
     }
     catch (const std::exception &ex)
     {
-      m_TableSize /= 2;
       return;
     }
-    for (uint32_t old_position = 0; old_position < m_TableSize / 2 + max_probes; old_position++)
+    for (uint32_t old_position = 0; old_position < oldSize + max_probes; old_position++)
     {
       // Note that tmp.first.Get() = c_EmptyKey.
       std::swap(tmp, m_Table[old_position]);
-      uint32_t new_position = (std::hash<KEY>{}(tmp.first.Get()) % m_TableSize);
+      uint32_t new_position = (std::hash<KEY>{}(tmp.first.Get()) % newSize);
       probes = 0;
       do
       {
@@ -107,7 +102,7 @@ private:
         {
           // Note that tmp.first.Get() = c_EmptyKey.
           std::swap(tmp, m_Table[new_position]);
-          if (max_probes < probes)
+          if (oldSize < newSize && max_probes < probes)
           {
             max_probes = probes;
           }
@@ -115,23 +110,25 @@ private:
         }
         probes++;
         new_position++;
-        if (new_position == m_TableSize)
+        if (new_position == newSize)
         {
           new_position = 0;
         }
       } while (true);
     }
+    m_TableSize = newSize;
   }
 
 public:
-  UnorderedMap<KEY, DATA>() = delete;
-  UnorderedMap<KEY, DATA>(const KEY &emptykey, const DATA &emptydata) : c_EmptyKey(emptykey), c_EmptyData(emptydata)
+  UnorderedMap<KEY, DATA, MINSIZE>() = delete;
+  UnorderedMap<KEY, DATA, MINSIZE>(const KEY &emptykey, const DATA &emptydata) : c_EmptyKey(emptykey), c_EmptyData(emptydata)
   {
     m_Elements = 0;
-    m_TableSize = 0x1 << 16;
+    m_TableSize = MINSIZE;
     m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData)));
+    std::cout << MINSIZE << std::endl;
   }
-  UnorderedMap<KEY, DATA>(const UnorderedMap<KEY, DATA> &other)
+  UnorderedMap<KEY, DATA, MINSIZE>(const UnorderedMap<KEY, DATA, MINSIZE> &other)
   {
     c_EmptyKey = other.c_EmptyKey;
     m_TableSize = other.m_TableSize;
@@ -139,9 +136,9 @@ public:
     m_Table = other.m_Table;
   }
 
-  UnorderedMap<KEY, DATA> &operator=(const UnorderedMap<KEY, DATA> &other)
+  UnorderedMap<KEY, DATA, MINSIZE> &operator=(const UnorderedMap<KEY, DATA, MINSIZE> &other)
   {
-    return UnorderedMap<KEY, DATA>(other);
+    return UnorderedMap<KEY, DATA, MINSIZE>(other);
   }
 
   bool Insert(const std::pair<KEY, DATA> &data)
@@ -176,7 +173,10 @@ public:
         position = 0;
       }
     } while (true);
-    ReHash();
+    if (m_Elements > m_TableSize * 2 / 3)
+    {
+      ReHash(m_TableSize * 2);
+    }
     return true;
   }
 
@@ -212,7 +212,10 @@ public:
         position = 0;
       }
     } while (true);
-    ReHash();
+    if (m_Elements > m_TableSize * 2 / 3)
+    {
+      ReHash(m_TableSize * 2);
+    }
     return true;
   }
 
@@ -308,6 +311,10 @@ public:
           } while (true);
         }
         m_Elements--;
+        if (m_Elements <= (m_TableSize / 4))
+        {
+          ReHash((m_TableSize / 2 < MINSIZE ? MINSIZE : m_TableSize / 2));
+        }
         return true;
       }
       else if (m_Table[position].first.Get() == c_EmptyKey)
@@ -328,11 +335,11 @@ public:
   class Iterator
   {
   private:
-    UnorderedMap<KEY, DATA> *m_List;
+    UnorderedMap<KEY, DATA, MINSIZE> *m_List;
     uint32_t m_Position;
 
   public:
-    Iterator(UnorderedMap<KEY, DATA> *list, uint32_t position) : m_List(list), m_Position(position) {}
+    Iterator(UnorderedMap<KEY, DATA, MINSIZE> *list, uint32_t position) : m_List(list), m_Position(position) {}
     Iterator(const Iterator &it) : m_List(it.m_List), m_Position(it.m_Position) {}
     Iterator &operator++()
     {
@@ -390,7 +397,7 @@ public:
 
 namespace robinhood
 {
-template <typename KEY, typename DATA>
+template <typename KEY, typename DATA, unsigned int MINSIZE = (0x1 << 16)>
 class UnorderedMap
 {
 private:
@@ -402,36 +409,31 @@ private:
   DATA m_EmptyData;
 
 private:
-  void ReHash()
+  void ReHash(const uint32_t &newSize)
   {
     std::tuple<GenericObject<KEY>, GenericObject<DATA>, uint32_t> tmp =
         std::tuple<GenericObject<KEY>, GenericObject<DATA>, uint32_t>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData), 0);
     uint32_t max_probes = 0;
     uint32_t probes = 0;
-    if (m_Elements <= m_TableSize * 2 / 3)
+    const uint32_t oldSize = m_TableSize;
+    if (oldSize == newSize)
     {
       return;
     }
-    if (m_TableSize == 0xffffffff)
-    {
-      return;
-    }
-    m_TableSize *= 2;
     try
     {
-      m_Table.resize(m_TableSize, std::tuple<GenericObject<KEY>, GenericObject<DATA>, uint32_t>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData), 0));
+      m_Table.resize(newSize, std::tuple<GenericObject<KEY>, GenericObject<DATA>, uint32_t>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData), 0));
     }
     catch (const std::exception &ex)
     {
-      m_TableSize /= 2;
       return;
     }
     // ReHash
-    for (uint32_t old_position = 0; old_position < m_TableSize / 2 + max_probes; old_position++)
+    for (uint32_t old_position = 0; old_position < oldSize + max_probes; old_position++)
     {
       std::swap(tmp, m_Table[old_position]);
       std::get<2>(tmp) = 0;
-      uint32_t position = std::hash<KEY>{}(std::get<0>(tmp).Get()) % m_TableSize;
+      uint32_t position = std::hash<KEY>{}(std::get<0>(tmp).Get()) % newSize;
       probes = 0;
       do
       {
@@ -439,7 +441,7 @@ private:
         if (std::get<0>(m_Table[position]).Get() == c_EmptyKey)
         {
           std::swap(tmp, m_Table[position]);
-          if (max_probes < probes)
+          if (oldSize < newSize && max_probes < probes)
           {
             max_probes = probes;
           }
@@ -452,24 +454,26 @@ private:
         }
         probes++;
         position++;
-        if (position == m_TableSize)
+        if (position == newSize)
         {
           position = 0;
         }
         std::get<2>(tmp)++;
       } while (true);
     }
+    m_TableSize = newSize;
   }
 
 public:
-  UnorderedMap<KEY, DATA>() = delete;
-  UnorderedMap<KEY, DATA>(const KEY &emptykey, const DATA &emptydata) : c_EmptyKey(emptykey), c_EmptyData(emptydata)
+  UnorderedMap<KEY, DATA, MINSIZE>() = delete;
+  UnorderedMap<KEY, DATA, MINSIZE>(const KEY &emptykey, const DATA &emptydata) : c_EmptyKey(emptykey), c_EmptyData(emptydata)
   {
     m_Elements = 0;
-    m_TableSize = 0x1 << 16;
+    m_TableSize = MINSIZE;
     m_Table.resize(m_TableSize, std::tuple<GenericObject<KEY>, GenericObject<DATA>, uint32_t>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData), 0));
+    std::cout << MINSIZE << std::endl;
   }
-  UnorderedMap<KEY, DATA>(const UnorderedMap<KEY, DATA> &other)
+  UnorderedMap<KEY, DATA, MINSIZE>(const UnorderedMap<KEY, DATA, MINSIZE> &other)
   {
     c_EmptyKey = other.c_EmptyKey;
     m_TableSize = other.m_TableSize;
@@ -477,9 +481,9 @@ public:
     m_Table = other.m_Table;
   }
 
-  UnorderedMap<KEY, DATA> &operator=(const UnorderedMap<KEY, DATA> &other)
+  UnorderedMap<KEY, DATA, MINSIZE> &operator=(const UnorderedMap<KEY, DATA, MINSIZE> &other)
   {
-    return UnorderedMap<KEY, DATA>(other);
+    return UnorderedMap<KEY, DATA, MINSIZE>(other);
   }
 
   bool Insert(const std::pair<KEY, DATA> &data)
@@ -526,7 +530,10 @@ public:
       }
       std::get<2>(item)++;
     } while (true);
-    ReHash();
+    if (m_Elements > m_TableSize * 2 / 3)
+    {
+      ReHash(m_TableSize * 2);
+    }
     return true;
   }
 
@@ -574,7 +581,10 @@ public:
       }
       std::get<2>(item)++;
     } while (true);
-    ReHash();
+    if (m_Elements > m_TableSize * 2 / 3)
+    {
+      ReHash(m_TableSize * 2);
+    }
     return true;
   }
 
@@ -683,6 +693,10 @@ public:
           } while (true);
         }
         m_Elements--;
+        if (m_Elements <= (m_TableSize / 4))
+        {
+          ReHash((m_TableSize / 2 < MINSIZE ? MINSIZE : m_TableSize / 2));
+        }
         return true;
       }
       else if (std::get<0>(m_Table[position]).Get() == c_EmptyKey)
@@ -703,11 +717,11 @@ public:
   class Iterator
   {
   private:
-    UnorderedMap<KEY, DATA> *m_List;
+    UnorderedMap<KEY, DATA, MINSIZE> *m_List;
     uint32_t m_Position;
 
   public:
-    Iterator(UnorderedMap<KEY, DATA> *list, uint32_t position) : m_List(list), m_Position(position) {}
+    Iterator(UnorderedMap<KEY, DATA, MINSIZE> *list, uint32_t position) : m_List(list), m_Position(position) {}
     Iterator(const Iterator &it) : m_List(it.m_List), m_Position(it.m_Position) {}
     Iterator &operator++()
     {

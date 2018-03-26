@@ -696,13 +696,13 @@ class AVLTree
                         }
                     }
                 }
-                if (grand_parent->m_Left == parent && parent->m_Left == child)
+                else if (grand_parent->m_Left == parent && parent->m_Left == child)
                 {
                     RightRotation(grand_parent, parent);
                     grand_parent->m_BalanceFactor = 0;
                     parent->m_BalanceFactor = 0;
                 }
-                if (grand_parent->m_Right == parent && parent->m_Left == child)
+                else if (grand_parent->m_Right == parent && parent->m_Left == child)
                 {
                     RightRotation(parent, child);
                     LeftRotation(grand_parent, child);
@@ -727,7 +727,7 @@ class AVLTree
                         }
                     }
                 }
-                if (grand_parent->m_Right == parent && parent->m_Right == child)
+                else // (grand_parent->m_Right == parent && parent->m_Right == child)
                 {
                     LeftRotation(grand_parent, parent);
                     grand_parent->m_BalanceFactor = 0;

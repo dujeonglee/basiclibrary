@@ -126,7 +126,6 @@ public:
     m_Elements = 0;
     m_TableSize = MINSIZE;
     m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData)));
-    std::cout << MINSIZE << std::endl;
   }
   UnorderedMap<KEY, DATA, MINSIZE>(const UnorderedMap<KEY, DATA, MINSIZE> &other)
   {
@@ -139,6 +138,14 @@ public:
   UnorderedMap<KEY, DATA, MINSIZE> &operator=(const UnorderedMap<KEY, DATA, MINSIZE> &other)
   {
     return UnorderedMap<KEY, DATA, MINSIZE>(other);
+  }
+
+  void Clear()
+  {
+    m_Table.clear();
+    m_Elements = 0;
+    m_TableSize = MINSIZE;
+    m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData)));
   }
 
   bool Insert(const std::pair<KEY, DATA> &data)
@@ -471,7 +478,6 @@ public:
     m_Elements = 0;
     m_TableSize = MINSIZE;
     m_Table.resize(m_TableSize, std::tuple<GenericObject<KEY>, GenericObject<DATA>, uint32_t>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData), 0));
-    std::cout << MINSIZE << std::endl;
   }
   UnorderedMap<KEY, DATA, MINSIZE>(const UnorderedMap<KEY, DATA, MINSIZE> &other)
   {
@@ -484,6 +490,14 @@ public:
   UnorderedMap<KEY, DATA, MINSIZE> &operator=(const UnorderedMap<KEY, DATA, MINSIZE> &other)
   {
     return UnorderedMap<KEY, DATA, MINSIZE>(other);
+  }
+
+  void Clear()
+  {
+    m_Table.clear();
+    m_Elements = 0;
+    m_TableSize = MINSIZE;
+    m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData)));
   }
 
   bool Insert(const std::pair<KEY, DATA> &data)

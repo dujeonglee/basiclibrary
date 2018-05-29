@@ -127,9 +127,8 @@ public:
     m_TableSize = MINSIZE;
     m_Table.resize(m_TableSize, std::pair<GenericObject<KEY>, GenericObject<DATA>>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData)));
   }
-  UnorderedMap<KEY, DATA, MINSIZE>(const UnorderedMap<KEY, DATA, MINSIZE> &other)
+  UnorderedMap<KEY, DATA, MINSIZE>(const UnorderedMap<KEY, DATA, MINSIZE> &other) : c_EmptyKey(other.c_EmptyKey), c_EmptyData(other.c_EmptyData)
   {
-    c_EmptyKey = other.c_EmptyKey;
     m_TableSize = other.m_TableSize;
     m_Elements = other.m_Elements;
     m_Table = other.m_Table;
@@ -479,9 +478,8 @@ public:
     m_TableSize = MINSIZE;
     m_Table.resize(m_TableSize, std::tuple<GenericObject<KEY>, GenericObject<DATA>, uint32_t>(GenericObject<KEY>(c_EmptyKey), GenericObject<DATA>(c_EmptyData), 0));
   }
-  UnorderedMap<KEY, DATA, MINSIZE>(const UnorderedMap<KEY, DATA, MINSIZE> &other)
+  UnorderedMap<KEY, DATA, MINSIZE>(const UnorderedMap<KEY, DATA, MINSIZE> &other) : c_EmptyKey(other.c_EmptyKey), c_EmptyData(other.c_EmptyData)
   {
-    c_EmptyKey = other.c_EmptyKey;
     m_TableSize = other.m_TableSize;
     m_Elements = other.m_Elements;
     m_Table = other.m_Table;

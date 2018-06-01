@@ -14,7 +14,7 @@ namespace basiclibrary
 #ifdef __linux__
 // Linux platform
 #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-#if GCC_VERSION >= 40800
+#if GCC_VERSION >= 40700
 typedef std::chrono::steady_clock CLOCK;
 #else
 typedef std::chrono::monotonic_clock CLOCK;

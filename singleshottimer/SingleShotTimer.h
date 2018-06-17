@@ -313,7 +313,7 @@ class SingleShotTimer
     static void PeriodicTaskWrapper(SingleShotTimer<PRIORITY, THREAD> *const timer, const uint32_t interval, const std::function<const bool(void)> task, const uint32_t priority = 0)
     {
         std::function<void()> wrapper = std::bind(SingleShotTimer<PRIORITY, THREAD>::PeriodicTaskWrapper, timer, interval, task, priority);
-        if (task())
+        if (task() && timer->m_Running)
         {
             timer->ScheduleTaskNoExcept(interval, wrapper, priority);
         }
@@ -323,7 +323,7 @@ class SingleShotTimer
     {
         std::function<void()> wrapper = std::bind(SingleShotTimer<PRIORITY, THREAD>::PeriodicTaskWrapperAdv, timer, task);
         const std::tuple<bool, uint32_t, uint32_t> ret = task();
-        if (std::get<0>(ret))
+        if (std::get<0>(ret) && timer->m_Running)
         {
             timer->ScheduleTaskNoExcept(std::get<1>(ret), wrapper, std::get<2>(ret));
         }

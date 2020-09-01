@@ -211,7 +211,7 @@ class SingleShotTimer
                     {
                         while (self->m_ActiveTaskInformationList.size() == 0 && self->m_Running)
                         {
-                            self->m_Condition.wait_for(ActiveTaskInformationListLock, std::chrono::milliseconds(500));
+                            self->m_Condition.wait(ActiveTaskInformationListLock);
                         }
                     }
                     if (!self->m_Running)
